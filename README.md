@@ -2,22 +2,33 @@
 
 **Read. Annotate. Understand.**
 
-Gloss is an open-source reading list and note-taking app that runs entirely on GitHub Pages. It's designed for people who read a lot — researchers, developers, writers, curious minds — and want a beautiful, fast way to track what they read, take notes, and let Claude do the heavy reading for them.
+Gloss is an open-source reading list app that runs on GitHub Pages and uses Claude to do the heavy lifting of reading for you. Add articles, papers, and links — Claude fetches, analyzes, and writes structured notes back to your repo. Automatically.
 
 ![Gloss](https://img.shields.io/badge/Gloss-Read.%20Annotate.%20Understand.-FF5021?style=flat-square)
 
+## How It Works
+
+Gloss has two ways to get articles analyzed by Claude:
+
+**Automated (hands-off):** Add a URL to `queue.md` or use the **+ Add article** button in the app. A GitHub Action detects the change, fires up Claude Code, and Claude reads the article, writes a TTS-optimized analysis, adds it to your reading list, and commits — all without you doing anything.
+
+**Conversational (interactive):** Paste a URL into a Claude chat and say *"summarize this and save it to my Gloss."* Claude analyzes the article and writes the note to your repo. You can also say *"check my Gloss inbox"* and Claude will process everything in your queue.
+
+Both workflows write structured markdown notes to your repo and update your live site.
+
 ## Features
 
-- **Inbox queue** — Add articles with a URL and note, then tell Claude to process your queue
-- **Claude integration** — Included skill lets Claude read, summarize, and write notes for you
+- **Automated queue processing** — Push a URL, a GitHub Action runs Claude to analyze it and commit the result
+- **Inbox queue** — Add articles with a URL and note from the app, then let Claude process your queue
+- **Claude integration** — Included skill file + `CLAUDE.md` instructions for both Claude chat and Claude Code
 - **TTS (Text-to-Speech)** — Click any analysis paragraph to hear it read aloud
-- **Dark mode** — Easy on the eyes, toggle anytime
+- **GitHub sync** — One-click sync button pulls and pushes notes to your repo
+- **Dark mode** — Toggle anytime
 - **Contextual notes** — Tag notes to specific articles with type labels (idea, question, connection, action)
 - **Voice notes** — Dictate notes with speech recognition
 - **Star ratings** — Rate articles 1–5
 - **Reading streaks** — Track your daily reading activity
 - **Search & filter** — Find articles by title, tag, or read status
-- **GitHub sync** — Save notes and queue as markdown files to your repo
 - **Zero build step** — Pure HTML/CSS/JS, deploy to GitHub Pages instantly
 
 ## Quick Start
@@ -31,7 +42,7 @@ git clone https://github.com/yourusername/gloss.git
 
 ### 2. Edit `config.js`
 
-Open `config.js` and set your name, tagline, colors, and tags:
+Set your name, tagline, colors, and tags:
 ```javascript
 const CONFIG = {
   name: "My Reading List",
@@ -71,66 +82,122 @@ Open `https://yourusername.github.io/gloss` — you're live!
 
 ---
 
-## Using Gloss with Claude
+## Setting Up Claude Automation
 
-Gloss is designed to work with Claude as your reading assistant. Here's how the workflow works:
+This is what makes Gloss different from every other reading list. Two setup steps and you have a fully automated reading pipeline.
 
-### The Inbox
+### Step 1: Add your Anthropic API key
 
-Click **+ Add article** to drop a URL into your reading queue. Add a quick note about why you're saving it or what you want Claude to focus on. The inbox syncs to a `queue.md` file in your GitHub notes folder.
+Go to your repo's **Settings → Secrets and variables → Actions → New repository secret**.
 
-Then just tell Claude:
+- **Name:** `ANTHROPIC_API_KEY`
+- **Value:** Your API key from [console.anthropic.com](https://console.anthropic.com)
 
-> **"Check my Gloss inbox and summarize everything."**
+This powers the GitHub Action that processes your queue automatically.
 
-Claude will read the queue, fetch each article, analyze it using the right mode (paper, news, blog, or technical doc), and save structured notes back to your repo.
+### Step 2: Connect GitHub sync in the app
+
+1. Create a [fine-grained GitHub token](https://github.com/settings/tokens?type=beta) with **read/write Contents** access scoped to your repo
+2. In Gloss, click the GitHub icon in the header → enter your token, repo (e.g., `yourusername/gloss`), and notes path (e.g., `notes`)
+3. You'll need to do this on each device/browser you use — the token is stored in localStorage
+
+Once connected, the sync button (🔄) appears in the header. Click it to pull notes written by Claude and push any local changes.
+
+### How the automated pipeline works
+
+```
+You add a URL (app or queue.md)
+        ↓
+Push hits GitHub
+        ↓
+GitHub Action detects queue.md change
+        ↓
+Claude Code reads CLAUDE.md for instructions
+        ↓
+Claude fetches the article, writes analysis HTML
+        ↓
+Claude adds it to content.js + index.html
+        ↓
+Claude commits and pushes → your site updates
+```
+
+The GitHub Action workflow is in `.github/workflows/process-queue.yml`. Claude Code follows the instructions in `CLAUDE.md`, which tells it how to edit your specific Gloss setup — where to insert analyses, how to structure the HTML, and what writing style to use.
+
+---
+
+## Using Gloss with Claude Chat
+
+Beyond the automated pipeline, you can use Claude interactively as your reading companion.
+
+### First-time setup
+
+Paste this into a new Claude thread to get started:
+
+> **Setup: Install my reading companion skill**
+>
+> I have a custom reading companion skill stored in my GitHub repo. Fetch and read this file so you know how to help me:
+>
+> `https://raw.githubusercontent.com/YOURUSERNAME/gloss/main/skills/reading-companion/SKILL.md`
+>
+> Read that file and follow its instructions for all future article analysis in this thread. Confirm what modes you found and that you're ready.
+>
+> My GitHub repo is `YOURUSERNAME/gloss`. Notes go in `notes/`.
+
+Replace `YOURUSERNAME` with your GitHub username.
 
 ### What you can say to Claude
 
 - *"Check my Gloss inbox"* — Process all queued articles
 - *"Read this paper and save it to my Gloss"* — Analyze a single article
 - *"Summarize this as a news article"* — Force a specific analysis mode
-- *"Give me a quick take on this"* — Get a short 2–3 paragraph summary instead of the full analysis
+- *"Give me a quick take on this"* — Get a short 2–3 paragraph summary
 
-### Setting up the Claude skill
+### Analysis Modes
 
-1. Copy `skills/reading-companion/SKILL.md` to your Claude skills folder
-2. Connect Claude to your GitHub repo (via Claude's GitHub connection)
-3. Start reading!
-
-### Skill Modes
+Claude auto-detects the right mode based on the content:
 
 | Mode | Best For | Depth |
 |------|----------|-------|
-| `research-paper` | Academic papers, proceedings | Deep (9 sections, ~13 min TTS) |
-| `news-article` | News, AI updates | Quick (5 sections, ~3 min TTS) |
-| `blog-post` | Essays, tutorials | Medium (5 sections, ~5 min TTS) |
-| `technical-doc` | Whitepapers, API docs | Medium (5 sections, ~7 min TTS) |
+| `research-paper` | Academic papers, conference proceedings | Deep (8 sections, ~13 min TTS) |
+| `news-article` | AI/tech news, product launches | Quick (5 sections, ~3 min TTS) |
+| `blog-post` | Essays, opinion pieces, tutorials | Medium (5 sections, ~5 min TTS) |
+| `technical-doc` | API docs, whitepapers, specs | Medium (6 sections, ~7 min TTS) |
 
 ---
 
 ## GitHub Sync
 
-Save your notes and reading queue as markdown files in the repo so Claude can read them.
-
-1. Create a [fine-grained GitHub token](https://github.com/settings/tokens?type=beta) with **read/write Contents** access scoped to your repo
-2. In Gloss, click the GitHub icon → enter your token, repo, and notes path
-3. Notes and queue auto-sync when you add them
+Notes and queue sync as markdown files in your repo.
 
 ### What gets synced
 
 | File | Purpose |
 |------|---------|
+| `queue.md` | Reading queue — URLs waiting for Claude to process |
 | `notes/README.md` | Reading progress summary |
-| `notes/queue.md` | Inbox — articles waiting for Claude |
-| `notes/article-01.md` | Individual article notes |
-| `notes/2026-03-01-slug.md` | Ad-hoc article analysis |
+| `notes/queue.md` | App-synced inbox queue |
+| `notes/{slug}.md` | Individual article notes and analyses |
 
 ---
 
+## File Structure
+
+```
+index.html                          ← The app (single-file HTML/CSS/JS)
+config.js                           ← Branding, tags, features, GitHub defaults
+content.js                          ← Your articles (the CONTENT array)
+queue.md                            ← URL queue — add URLs here to trigger automation
+CLAUDE.md                           ← Instructions for Claude Code (automated processing)
+notes/                              ← Synced reading notes (markdown)
+skills/reading-companion/SKILL.md   ← Claude skill for interactive chat use
+logo.svg                            ← Site logo
+examples/                           ← Ready-made configs for different use cases
+.github/workflows/process-queue.yml ← GitHub Action for automated queue processing
+```
+
 ## Configuration Reference
 
-See `config.js` for all options. Key sections:
+See `config.js` for all options:
 
 | Section | Controls |
 |---------|----------|

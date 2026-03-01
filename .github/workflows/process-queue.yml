@@ -12,7 +12,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      id-token: write
 
     steps:
       - name: Checkout repository
@@ -36,34 +35,41 @@ jobs:
             echo "$PENDING"
           fi
 
+      - name: Setup Node.js
+        if: steps.check.outputs.has_pending == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Claude Code
+        if: steps.check.outputs.has_pending == 'true'
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Configure git
+        if: steps.check.outputs.has_pending == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
       - name: Process queue with Claude Code
         if: steps.check.outputs.has_pending == 'true'
-        uses: anthropics/claude-code-action@v1
-        with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          prompt: |
-            Read CLAUDE.md for full instructions on how this repo works.
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          claude -p "Read CLAUDE.md for full instructions on how this repo works.
 
-            Then read queue.md and find all URLs under the "## Pending" section.
+          Then read queue.md and find all URLs under the '## Pending' section.
 
-            For each pending URL:
-            1. Fetch and read the article using WebFetch
-            2. Follow the instructions in CLAUDE.md to add it to the reading list
-            3. After successfully adding it, move the URL from "## Pending" to "## Processed" in queue.md, prefixed with the article number
-            4. Commit after each article
+          For each pending URL:
+          1. Fetch and read the article using WebFetch
+          2. Follow the instructions in CLAUDE.md to add it to the reading list
+          3. After successfully adding it, move the URL from '## Pending' to '## Processed' in queue.md, prefixed with the article number
+          4. Commit after each article with message format: 'Add #{N}: {Short Title}'
 
-            If a URL cannot be fetched, leave it in Pending with a note: "- https://... (fetch failed — retry later)"
-          allowed_tools: |
-            Read
-            Write
-            Edit
-            WebFetch
-            WebSearch
-            Bash(git add)
-            Bash(git commit)
-            Bash(git push)
-            Bash(git status)
-            Bash(git diff)
-            Bash(git log)
-          timeout_minutes: 30
+          If a URL cannot be fetched, leave it in Pending with a note: '- https://... (fetch failed — retry later)'
+
+          After committing, push changes with: git push origin main" \
+            --allowedTools "Read,Write,Edit,WebFetch,WebSearch,Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git status),Bash(git diff:*),Bash(git log:*)" \
+            --max-turns 30 \
+            --dangerously-skip-permissions
+        timeout-minutes: 30
