@@ -1810,6 +1810,7 @@ async function loadArticles() {
       papers = CONTENT;
     }
   }
+  buildFilters();
   renderPapers();
   updateStats();
   document.getElementById('statsRow').style.opacity = '1';
@@ -2936,41 +2937,48 @@ function applyConfig() {
     }
   }
 
-  // Build filter buttons from tags
-  const filtersRow = document.getElementById('filtersRow');
-  if (filtersRow && CONFIG.tags) {
-    let btns = '<button class="filter-btn active" data-filter="all">All</button>';
-    const seen = new Set();
-    // Add tags from config
-    for (const [key, [cls, label]] of Object.entries(CONFIG.tags)) {
-      btns += `<button class="filter-btn" data-filter="${key}">${label}</button>`;
-      seen.add(key);
-    }
-    // Also add any tags found in content that aren't in config
-    if (typeof CONTENT !== 'undefined') {
-      CONTENT.forEach(item => {
-        (item.tags || []).forEach(t => {
-          if (!seen.has(t)) {
-            btns += `<button class="filter-btn" data-filter="${t}">${t.charAt(0).toUpperCase() + t.slice(1)}</button>`;
-            seen.add(t);
-          }
-        });
-      });
-    }
-    btns += '<button class="filter-btn" data-filter="read">✓ Read</button>';
-    btns += '<button class="filter-btn" data-filter="unread">Unread</button>';
-    filtersRow.innerHTML = btns;
+  buildFilters();
+}
 
-    // Re-attach filter click handlers
-    filtersRow.querySelectorAll('.filter-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        currentFilter = btn.dataset.filter;
-        filtersRow.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        renderPapers();
-      });
-    });
+function buildFilters() {
+  const filtersRow = document.getElementById('filtersRow');
+  if (!filtersRow || !CONFIG.tags) return;
+
+  let btns = '<button class="filter-btn active" data-filter="all">All</button>';
+  btns += '<button class="filter-btn" data-filter="unread">Unread</button>';
+  btns += '<button class="filter-btn" data-filter="read">Read</button>';
+
+  const seen = new Set();
+  // Add tags from config
+  for (const [key, [cls, label]] of Object.entries(CONFIG.tags)) {
+    btns += `<button class="filter-btn" data-filter="${key}">${label}</button>`;
+    seen.add(key);
   }
+  // Also add any tags found in loaded articles that aren't in config
+  papers.forEach(item => {
+    (item.tags || []).forEach(t => {
+      if (!seen.has(t)) {
+        btns += `<button class="filter-btn" data-filter="${t}">${t.charAt(0).toUpperCase() + t.slice(1)}</button>`;
+        seen.add(t);
+      }
+    });
+  });
+
+  filtersRow.innerHTML = btns;
+
+  // Restore active state if filter was set
+  filtersRow.querySelectorAll('.filter-btn').forEach(btn => {
+    if (btn.dataset.filter === currentFilter) {
+      btn.classList.add('active');
+      filtersRow.querySelector('.filter-btn[data-filter="all"]')?.classList.remove('active');
+    }
+    btn.addEventListener('click', () => {
+      currentFilter = btn.dataset.filter;
+      filtersRow.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderPapers();
+    });
+  });
 }
 
 
