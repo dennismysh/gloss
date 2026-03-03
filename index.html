@@ -2969,88 +2969,7 @@ function applyConfig() {
 
 
 
-// ── Queue / Inbox ──
-const QUEUE_KEY = CONFIG.storage.prefix + 'queue';
-
-function getQueue() {
-  try { return JSON.parse(localStorage.getItem(QUEUE_KEY)) || []; }
-  catch { return []; }
-}
-
-function saveQueue(q) {
-  localStorage.setItem(QUEUE_KEY, JSON.stringify(q));
-  updateInboxBadge();
-  renderInbox();
-}
-
-function updateInboxBadge() {
-  const badge = document.getElementById('inboxBadge');
-  if (!badge) return;
-  const count = getQueue().length;
-  badge.textContent = count > 0 ? count : '';
-}
-
-function switchView(view) {
-  const tabs = document.querySelectorAll('.view-tab');
-  tabs.forEach(t => t.classList.toggle('active', t.dataset.view === view));
-
-  const libraryPanel = document.getElementById('libraryPanel');
-  const inboxPanel = document.getElementById('inboxPanel');
-
-  if (view === 'inbox') {
-    libraryPanel.classList.add('hidden');
-    inboxPanel.classList.add('active');
-    renderInbox();
-  } else {
-    libraryPanel.classList.remove('hidden');
-    inboxPanel.classList.remove('active');
-  }
-  if (window.lucide) lucide.createIcons();
-}
-
-function renderInbox() {
-  const list = document.getElementById('inboxList');
-  const queue = getQueue();
-
-  if (queue.length === 0) {
-    list.innerHTML = `
-      <div class="inbox-empty">
-        <div class="inbox-empty-icon"><i data-lucide="inbox" style="width:48px;height:48px;"></i></div>
-        <h3>Inbox is empty</h3>
-        <p>Add articles with the <strong>+ Add article</strong> button, then tell Claude:<br><em>"Check my Gloss inbox and summarize everything."</em></p>
-      </div>`;
-    if (window.lucide) lucide.createIcons();
-    return;
-  }
-
-  list.innerHTML = queue.map((item, i) => {
-    const domain = (() => { try { return new URL(item.url).hostname.replace('www.',''); } catch { return ''; } })();
-    const dateStr = new Date(item.added).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    return `
-      <div class="queue-item" style="animation-delay:${i * 0.04}s">
-        <div class="queue-item-header">
-          <div>
-            <div class="queue-item-title">${item.title || domain || 'Untitled'}</div>
-            <div class="queue-item-url"><a href="${item.url}" target="_blank" rel="noopener">${item.url}</a></div>
-            ${item.note ? `<div class="queue-item-note">${item.note}</div>` : ''}
-          </div>
-        </div>
-        <div class="queue-item-meta">
-          <span>Added ${dateStr}</span>
-          <span>·</span>
-          <span>${domain}</span>
-          <span style="flex:1;"></span>
-          <div class="queue-item-actions">
-            <button class="queue-done-btn" onclick="markQueueDone(${i})"><i data-lucide="check" style="width:11px;height:11px;margin-right:2px;"></i>Done</button>
-            <button class="queue-remove-btn" onclick="removeFromQueue(${i})"><i data-lucide="x" style="width:11px;height:11px;margin-right:2px;"></i>Remove</button>
-          </div>
-        </div>
-      </div>`;
-  }).join('');
-
-  if (window.lucide) lucide.createIcons();
-}
-
+// ── Add Article ──
 function openAddModal() {
   document.getElementById('addModalOverlay').classList.add('show');
   setTimeout(() => document.getElementById('addUrl').focus(), 100);
@@ -3063,103 +2982,6 @@ function closeAddModal() {
   document.getElementById('addTitle').value = '';
 }
 
-function submitAddArticle() {
-  const url = document.getElementById('addUrl').value.trim();
-  if (!url) return;
-
-  const note = document.getElementById('addNote').value.trim();
-  const title = document.getElementById('addTitle').value.trim();
-
-  const queue = getQueue();
-  queue.push({
-    url,
-    title: title || '',
-    note: note || '',
-    added: new Date().toISOString(),
-    status: 'pending'
-  });
-  saveQueue(queue);
-  closeAddModal();
-  showToast('Added to inbox');
-
-  // Auto-sync to GitHub if connected
-  pushQueueToGitHub();
-
-  // Switch to inbox view
-  switchView('inbox');
-}
-
-function removeFromQueue(index) {
-  const queue = getQueue();
-  queue.splice(index, 1);
-  saveQueue(queue);
-  pushQueueToGitHub();
-}
-
-function markQueueDone(index) {
-  const queue = getQueue();
-  queue.splice(index, 1);
-  saveQueue(queue);
-  showToast('Marked as done');
-  pushQueueToGitHub();
-}
-
-// ── Queue GitHub Sync ──
-async function pushQueueToGitHub() {
-  const cfg = getGHConfig();
-  if (!cfg.token) return;
-
-  const queue = getQueue();
-  let md = `# Reading Queue\n\n`;
-  md += `> Articles waiting to be read and summarized by Claude.\n`;
-  md += `> Last updated: ${new Date().toISOString()}\n\n`;
-
-  if (queue.length === 0) {
-    md += `_Queue is empty. Add articles in Gloss or tell Claude to check back later._\n`;
-  } else {
-    md += `**${queue.length} article${queue.length !== 1 ? 's' : ''} in queue:**\n\n`;
-    queue.forEach((item, i) => {
-      md += `## ${i + 1}. ${item.title || 'Untitled'}\n\n`;
-      md += `- **URL:** ${item.url}\n`;
-      md += `- **Added:** ${new Date(item.added).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}\n`;
-      if (item.note) md += `- **Note:** ${item.note}\n`;
-      md += `- **Status:** ${item.status || 'pending'}\n\n`;
-    });
-  }
-
-  md += `---\n\n`;
-  md += `*This file is managed by Gloss. Claude reads it to know which articles to summarize next.*\n`;
-
-  const content = btoa(unescape(encodeURIComponent(md)));
-  const filePath = `${cfg.path}/queue.md`;
-
-  try {
-    let sha = null;
-    const getRes = await fetch(`https://api.github.com/repos/${cfg.repo}/contents/${filePath}`, {
-      headers: { 'Authorization': `Bearer ${cfg.token}`, 'Accept': 'application/vnd.github+json' }
-    });
-    if (getRes.ok) {
-      const existing = await getRes.json();
-      sha = existing.sha;
-    }
-
-    const body = { message: 'Update reading queue', content, branch: 'main' };
-    if (sha) body.sha = sha;
-
-    await fetch(`https://api.github.com/repos/${cfg.repo}/contents/${filePath}`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${cfg.token}`,
-        'Accept': 'application/vnd.github+json',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(body)
-    });
-  } catch (e) {
-    console.error('Queue sync error:', e);
-  }
-}
-
 // ── Init ──
 applyConfig();
 loadTheme();
@@ -3170,7 +2992,6 @@ renderStreak();
 loadArticles();
 updateNotesCount();
 updateGHIcon();
-updateInboxBadge();
 if (window.lucide) lucide.createIcons();
 </script>
 </body>
