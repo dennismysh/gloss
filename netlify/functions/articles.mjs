@@ -1,5 +1,5 @@
 import { getStore } from "@netlify/blobs";
-import { GoogleGenAI } from "@google/genai";
+import Anthropic from "@anthropic-ai/sdk";
 
 export default async (req, context) => {
   const method = req.method;
@@ -117,19 +117,17 @@ async function handlePost(req) {
         const index = await getNextId();
         const id = index.nextId;
 
-        // Call Gemini via AI Gateway
-        const genAI = new GoogleGenAI({});
+        // Call Claude Haiku via AI Gateway
+        const anthropic = new Anthropic();
         const prompt = buildPrompt(articleContent, url, tags, title, note);
 
-        const result = await genAI.models.generateContent({
-          model: "gemini-flash-lite-latest",
-          contents: prompt,
-          config: {
-            responseMimeType: "application/json",
-          },
+        const message = await anthropic.messages.create({
+          model: "claude-haiku-4-5-20241022",
+          max_tokens: 8192,
+          messages: [{ role: "user", content: prompt }],
         });
 
-        let responseText = result.text;
+        let responseText = message.content[0].text;
         // Strip markdown fences if model wraps the JSON
         responseText = responseText.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
         let parsed;
