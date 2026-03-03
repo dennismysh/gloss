@@ -119,11 +119,13 @@ async function handlePost(req) {
 
         const message = await anthropic.messages.create({
           model: "claude-sonnet-4-5-20250929",
-          max_tokens: 4096,
+          max_tokens: 8192,
           messages: [{ role: "user", content: prompt }],
         });
 
-        const responseText = message.content[0].text;
+        let responseText = message.content[0].text;
+        // Strip markdown fences if Claude wraps the JSON
+        responseText = responseText.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
         let parsed;
         try {
           parsed = JSON.parse(responseText);
