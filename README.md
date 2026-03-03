@@ -4,7 +4,7 @@
 
 Gloss is an open-source reading list app that runs on GitHub Pages and uses Claude to do the heavy lifting of reading for you. Add articles, papers, and links — Claude fetches, analyzes, and writes structured notes back to your repo. Automatically.
 
-![Gloss](https://img.shields.io/badge/Gloss-Read.%20Annotate.%20Understand.-FF5021?style=flat-square)
+![Gloss](https://img.shields.io/badge/Gloss-Read.%20Annotate.%20Understand.-F25623?style=flat-square)
 
 ## How It Works
 
