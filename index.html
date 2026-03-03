@@ -2376,8 +2376,7 @@ function renderPapers() {
           <div class="paper-tags">${tags}</div>
           ${p.note ? '<div class="paper-note">📌 ' + p.note + '</div>' : ''}
           <div class="paper-actions">
-            <a href="${p.pdf}" target="_blank" rel="noopener" class="action-btn" onclick="setPaperContext(${p.id})"><i data-lucide="file-text" style="font-size:12px;margin-right:3px;"></i>PDF</a>
-            <a href="${p.arxiv}" target="_blank" rel="noopener" class="action-btn"><i data-lucide="external-link" style="font-size:11px;margin-right:3px;"></i>arXiv</a>
+            ${p.url ? `<a href="${p.url}" target="_blank" rel="noopener" class="action-btn" onclick="setPaperContext(${p.id})"><i data-lucide="${p.url.includes('arxiv.org') ? 'external-link' : 'file-text'}" style="font-size:12px;margin-right:3px;"></i>${p.url.includes('arxiv.org') ? 'arXiv' : p.url.endsWith('.pdf') ? 'PDF' : 'Source'}</a>` : ''}
             ${analysisBtn}
             ${noteBadge}
             <button class="action-btn btn-read ${p.read ? 'marked' : ''}" onclick="toggleRead(${p.id})">
@@ -2597,8 +2596,8 @@ function buildPaperNotesMarkdown(paperId) {
   md += `> **Status:** ${paper.read ? 'Read ✓' : 'Unread'}\n`;
   if (rating) md += `> **Rating:** ${'★'.repeat(rating)}${'☆'.repeat(5-rating)} (${rating}/5)\n`;
   md += `> **Tags:** ${paper.tags.join(', ')}\n`;
-  md += `> **PDF:** ${paper.pdf}\n`;
-  md += `> **arXiv:** ${paper.arxiv}\n\n`;
+  if (paper.url) md += `> **Source:** ${paper.url}\n`;
+  md += `\n`;
 
   if (paper.relevance) {
     md += `## Relevance\n\n${paper.relevance.replace(/<\/?em>/g, '*')}\n\n`;
