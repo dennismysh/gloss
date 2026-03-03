@@ -223,7 +223,7 @@ ${titleHint}${noteContext}
 Article URL: ${url}
 
 Article content:
-${content.substring(0, 50000)}
+${content.substring(0, 30000)}
 
 Return ONLY valid JSON. No markdown fences. No explanation outside the JSON.`;
 }
