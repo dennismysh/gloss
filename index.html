@@ -2982,6 +2982,106 @@ function closeAddModal() {
   document.getElementById('addTitle').value = '';
 }
 
+function submitAddArticle() {
+  const url = document.getElementById('addUrl').value.trim();
+  if (!url) return;
+
+  const note = document.getElementById('addNote').value.trim();
+  const title = document.getElementById('addTitle').value.trim();
+
+  closeAddModal();
+
+  // Insert skeleton card at the top of the paper list
+  const paperList = document.getElementById('paperList');
+  const skeleton = document.createElement('div');
+  skeleton.className = 'skeleton-card';
+  skeleton.innerHTML = `
+    <div class="skeleton-label"><div class="spinner"></div> Analyzing article...</div>
+    <div class="skeleton-url"><a href="${url}" target="_blank" rel="noopener">${url}</a></div>
+    <div class="skeleton-line title"></div>
+    <div class="skeleton-line relevance"></div>
+    <div class="skeleton-line relevance" style="width:70%"></div>
+    <div class="skeleton-line tags"></div>
+  `;
+  paperList.prepend(skeleton);
+
+  // Call the API
+  fetch('/.netlify/functions/articles', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url, title: title || undefined, note: note || undefined })
+  })
+    .then(res => {
+      if (!res.ok) return res.json().then(e => Promise.reject(e));
+      return res.json();
+    })
+    .then(article => {
+      skeleton.remove();
+      papers.unshift(article);
+      renderPapers();
+      updateStats();
+      showToast('Article added');
+      if (window.lucide) lucide.createIcons();
+    })
+    .catch(err => {
+      const message = (err && err.error) || 'Something went wrong. The article may be paywalled or unavailable.';
+      skeleton.classList.add('error');
+      skeleton.innerHTML = `
+        <div class="skeleton-label">Failed to add article</div>
+        <div class="skeleton-url"><a href="${url}" target="_blank" rel="noopener">${url}</a></div>
+        <div class="error-message">${message}</div>
+        <div>
+          <button class="retry-btn" onclick="retryAddArticle(this, '${url.replace(/'/g, "\\'")}', '${(title || '').replace(/'/g, "\\'")}', '${(note || '').replace(/'/g, "\\'")}')">Retry</button>
+          <button class="dismiss-btn" onclick="this.closest('.skeleton-card').remove()">Dismiss</button>
+        </div>
+      `;
+    });
+}
+
+function retryAddArticle(btn, url, title, note) {
+  const skeleton = btn.closest('.skeleton-card');
+  skeleton.classList.remove('error');
+  skeleton.innerHTML = `
+    <div class="skeleton-label"><div class="spinner"></div> Analyzing article...</div>
+    <div class="skeleton-url"><a href="${url}" target="_blank" rel="noopener">${url}</a></div>
+    <div class="skeleton-line title"></div>
+    <div class="skeleton-line relevance"></div>
+    <div class="skeleton-line relevance" style="width:70%"></div>
+    <div class="skeleton-line tags"></div>
+  `;
+
+  fetch('/.netlify/functions/articles', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url, title: title || undefined, note: note || undefined })
+  })
+    .then(res => {
+      if (!res.ok) return res.json().then(e => Promise.reject(e));
+      return res.json();
+    })
+    .then(article => {
+      skeleton.remove();
+      papers.unshift(article);
+      renderPapers();
+      updateStats();
+      showToast('Article added');
+      if (window.lucide) lucide.createIcons();
+    })
+    .catch(err => {
+      const message = (err && err.error) || 'Something went wrong. The article may be paywalled or unavailable.';
+      skeleton.classList.add('error');
+      skeleton.innerHTML = `
+        <div class="skeleton-label">Failed to add article</div>
+        <div class="skeleton-url"><a href="${url}" target="_blank" rel="noopener">${url}</a></div>
+        <div class="error-message">${message}</div>
+        <div>
+          <button class="retry-btn" onclick="retryAddArticle(this, '${url.replace(/'/g, "\\'")}', '${(title || '').replace(/'/g, "\\'")}', '${(note || '').replace(/'/g, "\\'")}')">Retry</button>
+          <button class="dismiss-btn" onclick="this.closest('.skeleton-card').remove()">Dismiss</button>
+        </div>
+      `;
+    });
+}
+
 // ── Init ──
 applyConfig();
 loadTheme();
