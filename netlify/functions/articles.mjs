@@ -24,6 +24,10 @@ export default async (req, context) => {
     return handlePatch(req, url);
   }
 
+  if (method === "DELETE") {
+    return handleDelete(url);
+  }
+
   return new Response(JSON.stringify({ error: "Method not allowed" }), {
     status: 405,
     headers: { "Content-Type": "application/json" },
@@ -33,7 +37,7 @@ export default async (req, context) => {
 function corsHeaders() {
   return {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, PATCH, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
   };
 }
@@ -118,7 +122,7 @@ async function handlePost(req) {
         const prompt = buildPrompt(articleContent, url, tags, title, note);
 
         const result = await genAI.models.generateContent({
-          model: "gemini-2.0-flash",
+          model: "gemini-flash-lite-latest",
           contents: prompt,
           config: {
             responseMimeType: "application/json",
@@ -212,6 +216,40 @@ async function handlePatch(req, url) {
   await store.setJSON(id, article);
 
   return new Response(JSON.stringify(article), {
+    status: 200,
+    headers: { "Content-Type": "application/json", ...corsHeaders() },
+  });
+}
+
+async function handleDelete(url) {
+  const id = url.searchParams.get("id");
+  if (!id) {
+    return new Response(JSON.stringify({ error: "ID is required" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const store = getStore("articles");
+  const article = await store.get(id, { type: "json" });
+  if (!article) {
+    return new Response(JSON.stringify({ error: "Not found" }), {
+      status: 404,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  await store.delete(id);
+
+  // Also delete the analysis
+  const analyses = getStore("analyses");
+  await analyses.delete(id);
+
+  // Update count
+  const index = await getNextId();
+  await saveIndex({ nextId: index.nextId, count: Math.max(0, index.count - 1) });
+
+  return new Response(JSON.stringify({ deleted: true, id: Number(id) }), {
     status: 200,
     headers: { "Content-Type": "application/json", ...corsHeaders() },
   });

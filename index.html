@@ -642,6 +642,9 @@
     color: var(--green);
   }
 
+  .btn-delete { opacity: 0.4; padding: 6px 8px !important; }
+  .btn-delete:hover { opacity: 1; color: var(--rose) !important; border-color: var(--rose) !important; background: var(--rose-subtle) !important; }
+
   .btn-analysis.open {
     background: var(--teal-subtle);
     border-color: var(--teal);
@@ -1887,6 +1890,24 @@ function patchArticle(id, updates) {
   }).catch(e => console.error('Failed to patch article:', e));
 }
 
+function deleteArticle(id) {
+  const paper = papers.find(p => p.id === id);
+  if (!paper || !confirm(`Delete "${paper.title}"?`)) return;
+
+  fetch(`/.netlify/functions/articles?id=${id}`, { method: 'DELETE' })
+    .then(res => {
+      if (!res.ok) throw new Error('Delete failed');
+      papers = papers.filter(p => p.id !== id);
+      renderPapers();
+      updateStats();
+      showToast('Article deleted');
+    })
+    .catch(e => {
+      console.error('Failed to delete article:', e);
+      showToast('Failed to delete');
+    });
+}
+
 // ── Theme ──
 function loadTheme() {
   const saved = localStorage.getItem(THEME_KEY) || 'light';
@@ -2410,6 +2431,9 @@ function renderPapers() {
             ${noteBadge}
             <button class="action-btn btn-read ${p.read ? 'marked' : ''}" onclick="toggleRead(${p.id})">
               <i data-lucide="check-circle" style="font-size:12px;margin-right:3px;"></i>${p.read ? 'Read' : 'Mark read'}
+            </button>
+            <button class="action-btn btn-delete" onclick="deleteArticle(${p.id})" title="Delete article">
+              <i data-lucide="trash-2" style="font-size:12px;"></i>
             </button>
           </div>
           ${ratingHtml}
