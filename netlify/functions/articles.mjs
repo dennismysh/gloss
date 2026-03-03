@@ -38,13 +38,6 @@ function corsHeaders() {
   };
 }
 
-function checkAuth(req) {
-  const token = process.env.GLOSS_API_TOKEN;
-  if (!token) return true;
-  const auth = req.headers.get("authorization");
-  return auth === `Bearer ${token}`;
-}
-
 async function getNextId() {
   const meta = getStore("meta");
   const index = await meta.get("index", { type: "json" });
@@ -79,13 +72,6 @@ async function handleGet() {
 }
 
 async function handlePost(req) {
-  if (!checkAuth(req)) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
   const body = await req.json();
   const { url, tags } = body;
 
@@ -162,13 +148,6 @@ async function handlePost(req) {
 }
 
 async function handlePatch(req, url) {
-  if (!checkAuth(req)) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
   const id = url.searchParams.get("id");
   if (!id) {
     return new Response(JSON.stringify({ error: "ID is required" }), {
