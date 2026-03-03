@@ -82,69 +82,100 @@ async function handlePost(req) {
     });
   }
 
-  // Fetch article content
-  let articleContent;
-  try {
-    const res = await fetch(url);
-    articleContent = await res.text();
-  } catch (e) {
-    return new Response(JSON.stringify({ error: "Failed to fetch URL" }), {
-      status: 422,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      const send = (data) => {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+      };
 
-  // Get next ID
-  const index = await getNextId();
-  const id = index.nextId;
+      // Heartbeat to keep connection alive
+      const heartbeat = setInterval(() => {
+        controller.enqueue(encoder.encode(`: keepalive\n\n`));
+      }, 5000);
 
-  // Call Claude via AI Gateway
-  const anthropic = new Anthropic();
-  const prompt = buildPrompt(articleContent, url, tags, title, note);
+      try {
+        send({ status: "fetching" });
 
-  const message = await anthropic.messages.create({
-    model: "claude-sonnet-4-5-20250929",
-    max_tokens: 4096,
-    messages: [{ role: "user", content: prompt }],
+        // Fetch article content
+        const res = await fetch(url);
+        if (!res.ok) {
+          send({ status: "error", error: `Failed to fetch URL (HTTP ${res.status})` });
+          clearInterval(heartbeat);
+          controller.close();
+          return;
+        }
+        const articleContent = await res.text();
+
+        send({ status: "analyzing" });
+
+        // Get next ID
+        const index = await getNextId();
+        const id = index.nextId;
+
+        // Call Claude via AI Gateway
+        const anthropic = new Anthropic();
+        const prompt = buildPrompt(articleContent, url, tags, title, note);
+
+        const message = await anthropic.messages.create({
+          model: "claude-sonnet-4-5-20250929",
+          max_tokens: 4096,
+          messages: [{ role: "user", content: prompt }],
+        });
+
+        const responseText = message.content[0].text;
+        let parsed;
+        try {
+          parsed = JSON.parse(responseText);
+        } catch (e) {
+          send({ status: "error", error: "Failed to parse Claude response" });
+          clearInterval(heartbeat);
+          controller.close();
+          return;
+        }
+
+        send({ status: "storing" });
+
+        // Store article
+        const article = {
+          id,
+          title: parsed.title,
+          relevance: parsed.relevance,
+          url,
+          tags: parsed.tags || tags || [],
+          read: false,
+          hasAnalysis: true,
+          note: note || '',
+          createdAt: new Date().toISOString(),
+        };
+
+        const articles = getStore("articles");
+        await articles.setJSON(String(id), article);
+
+        // Store analysis
+        const analyses = getStore("analyses");
+        await analyses.set(String(id), parsed.analysis);
+
+        // Update index
+        await saveIndex({ nextId: id + 1, count: index.count + 1 });
+
+        send({ status: "complete", article });
+      } catch (e) {
+        send({ status: "error", error: e.message || "Unexpected error" });
+      }
+
+      clearInterval(heartbeat);
+      controller.close();
+    },
   });
 
-  const responseText = message.content[0].text;
-  let parsed;
-  try {
-    parsed = JSON.parse(responseText);
-  } catch (e) {
-    return new Response(JSON.stringify({ error: "Failed to parse Claude response" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
-  // Store article
-  const article = {
-    id,
-    title: parsed.title,
-    relevance: parsed.relevance,
-    url,
-    tags: parsed.tags || tags || [],
-    read: false,
-    hasAnalysis: true,
-    note: note || '',
-    createdAt: new Date().toISOString(),
-  };
-
-  const articles = getStore("articles");
-  await articles.setJSON(String(id), article);
-
-  // Store analysis
-  const analyses = getStore("analyses");
-  await analyses.set(String(id), parsed.analysis);
-
-  // Update index
-  await saveIndex({ nextId: id + 1, count: index.count + 1 });
-
-  return new Response(JSON.stringify(article), {
-    status: 201,
-    headers: { "Content-Type": "application/json", ...corsHeaders() },
+  return new Response(stream, {
+    status: 200,
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      ...corsHeaders(),
+    },
   });
 }
 
