@@ -1629,16 +1629,6 @@
   .add-modal-submit:hover { background: var(--accent-hover); }
   .add-modal-submit:disabled { opacity: 0.5; cursor: default; }
 
-  .add-modal-hint {
-    font-family: var(--font-sans);
-    font-size: 12px;
-    color: var(--text-tertiary);
-    margin-top: var(--space-xl);
-    padding-top: var(--space-md);
-    border-top: 1px solid var(--border-subtle);
-    line-height: 1.5;
-  }
-
 </style>
 </head>
 <body>
@@ -1689,10 +1679,6 @@
     <button class="view-tab active" data-view="library" onclick="switchView('library')">
       <i data-lucide="book-open" style="width:14px;height:14px;"></i> Library
     </button>
-    <button class="view-tab" data-view="inbox" onclick="switchView('inbox')">
-      <i data-lucide="inbox" style="width:14px;height:14px;"></i> Inbox
-      <span class="tab-badge" id="inboxBadge"></span>
-    </button>
     <button class="add-article-btn" onclick="openAddModal()">
       <i data-lucide="plus" style="width:14px;height:14px;"></i> Add article
     </button>
@@ -1717,10 +1703,6 @@
   <div class="paper-list" id="paperList"></div>
 </div>
 </div>
-
-  <div class="inbox-panel" id="inboxPanel">
-    <div class="inbox-list" id="inboxList"></div>
-  </div>
 
 <!-- Settings Modal -->
 <div class="settings-overlay" id="settingsOverlay" onclick="if(event.target===this)closeSettings()">
@@ -1760,7 +1742,7 @@
 <!-- Add Article Modal -->
 <div class="add-modal-overlay" id="addModalOverlay" onclick="if(event.target===this)closeAddModal()">
   <div class="add-modal">
-    <div class="add-modal-title"><i data-lucide="plus-circle" style="width:18px;height:18px;color:var(--accent);"></i> Add to Inbox</div>
+    <div class="add-modal-title"><i data-lucide="plus-circle" style="width:18px;height:18px;color:var(--accent);"></i> Add Article</div>
     <div class="add-modal-field">
       <label>URL</label>
       <input type="url" id="addUrl" placeholder="https://..." autocomplete="off" onkeydown="if(event.key==='Enter')submitAddArticle()">
@@ -1775,10 +1757,7 @@
     </div>
     <div class="add-modal-actions">
       <button class="add-modal-cancel" onclick="closeAddModal()">Cancel</button>
-      <button class="add-modal-submit" id="addSubmitBtn" onclick="submitAddArticle()">Add to queue</button>
-    </div>
-    <div class="add-modal-hint">
-      <strong>Tip:</strong> Tell Claude <em>"Check my Gloss inbox"</em> and it will read &amp; summarize everything in your queue. Articles are saved to <code>queue.md</code> in your GitHub notes folder.
+      <button class="add-modal-submit" id="addSubmitBtn" onclick="submitAddArticle()">Add article</button>
     </div>
   </div>
 </div>
