@@ -1425,128 +1425,109 @@
     background: var(--accent-subtle);
   }
 
-  /* Inbox Panel */
-  .inbox-panel { display: none; }
-  .inbox-panel.active { display: block; }
-  .library-panel.hidden { display: none; }
-
-  .inbox-empty {
-    text-align: center;
-    padding: var(--space-4xl) var(--space-xl);
-    color: var(--text-tertiary);
-  }
-  .inbox-empty-icon {
-    font-size: 48px;
-    margin-bottom: var(--space-md);
-    opacity: 0.4;
-  }
-  .inbox-empty h3 {
-    font-family: var(--font-sans);
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--text-secondary);
-    margin: 0 0 var(--space-sm) 0;
-  }
-  .inbox-empty p {
-    font-family: var(--font-sans);
-    font-size: 13px;
-    line-height: 1.5;
-    margin: 0;
-    max-width: 380px;
-    margin: 0 auto;
-  }
-
-  .queue-item {
+  /* Skeleton Loading Card */
+  .skeleton-card {
     background: var(--bg-elevated);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-md);
-    padding: var(--space-lg);
+    padding: var(--space-xl) var(--space-xl) var(--space-lg);
     margin-bottom: var(--space-md);
     max-width: var(--max-width);
     margin-left: auto;
     margin-right: auto;
     animation: cardIn 0.3s var(--ease-out) both;
   }
-  .queue-item:hover { border-color: var(--border); }
-  .queue-item-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: var(--space-md);
-  }
-  .queue-item-title {
-    font-family: var(--font-sans);
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text-primary);
-    word-break: break-word;
-  }
-  .queue-item-url {
+  .skeleton-card .skeleton-label {
     font-family: var(--font-mono);
     font-size: 11px;
-    color: var(--text-tertiary);
-    margin-top: 4px;
-    word-break: break-all;
-    display: -webkit-box;
-    -webkit-line-clamp: 1;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    color: var(--accent);
+    margin-bottom: var(--space-md);
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
-  .queue-item-url a {
+  .skeleton-card .skeleton-label .spinner {
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  .skeleton-card .skeleton-url {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-bottom: var(--space-md);
+    word-break: break-all;
+  }
+  .skeleton-card .skeleton-url a {
     color: var(--text-tertiary);
     text-decoration: none;
   }
-  .queue-item-url a:hover { color: var(--accent); }
-  .queue-item-note {
+  .skeleton-card .skeleton-url a:hover { color: var(--accent); }
+  .skeleton-line {
+    height: 14px;
+    background: linear-gradient(90deg, var(--bg-sunken) 25%, var(--bg-hover) 50%, var(--bg-sunken) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+    border-radius: 4px;
+    margin-bottom: var(--space-sm);
+  }
+  .skeleton-line.title { width: 65%; height: 18px; margin-bottom: var(--space-md); }
+  .skeleton-line.relevance { width: 90%; }
+  .skeleton-line.tags { width: 40%; height: 12px; margin-top: var(--space-md); }
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* Error Card */
+  .skeleton-card.error {
+    border-color: var(--rose);
+    border-style: dashed;
+  }
+  .skeleton-card.error .skeleton-label {
+    color: var(--rose);
+  }
+  .skeleton-card .error-message {
     font-family: var(--font-sans);
     font-size: 13px;
-    color: var(--text-secondary);
-    margin-top: var(--space-sm);
-    line-height: 1.45;
+    color: var(--rose);
+    margin-bottom: var(--space-md);
   }
-  .queue-item-meta {
-    display: flex;
-    align-items: center;
-    gap: var(--space-md);
-    margin-top: var(--space-md);
-    font-family: var(--font-mono);
-    font-size: 11px;
-    color: var(--text-tertiary);
-  }
-  .queue-item-actions {
-    display: flex;
-    gap: var(--space-sm);
-  }
-  .queue-remove-btn {
+  .skeleton-card .retry-btn {
     font-family: var(--font-sans);
-    font-size: 11px;
-    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 14px;
+    border: 1px solid var(--rose);
+    border-radius: var(--radius-sm);
+    background: var(--rose-subtle);
+    color: var(--rose);
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-out);
+  }
+  .skeleton-card .retry-btn:hover {
+    background: var(--rose);
+    color: white;
+  }
+  .skeleton-card .dismiss-btn {
+    font-family: var(--font-sans);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 14px;
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     background: transparent;
     color: var(--text-tertiary);
     cursor: pointer;
+    margin-left: var(--space-sm);
     transition: all var(--duration-fast) var(--ease-out);
   }
-  .queue-remove-btn:hover {
-    border-color: var(--rose);
-    color: var(--rose);
-    background: var(--rose-subtle);
-  }
-  .queue-done-btn {
-    font-family: var(--font-sans);
-    font-size: 11px;
-    padding: 4px 10px;
-    border: 1px solid var(--green);
-    border-radius: var(--radius-sm);
-    background: var(--green-subtle);
-    color: var(--green);
-    cursor: pointer;
-    transition: all var(--duration-fast) var(--ease-out);
-  }
-  .queue-done-btn:hover {
-    background: var(--green);
-    color: white;
+  .skeleton-card .dismiss-btn:hover {
+    border-color: var(--text-secondary);
+    color: var(--text-secondary);
   }
 
   /* Add Article Modal */
