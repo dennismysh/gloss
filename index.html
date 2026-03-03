@@ -1679,7 +1679,7 @@
     <h1>Flagged Papers</h1>
     <p class="subtitle" id="subtitle">Your curated reading list with analysis, notes, and TTS.</p>
 
-    <div class="stats-row">
+    <div class="stats-row" id="statsRow" style="opacity: 0; transition: opacity 0.3s">
       <div class="stat">
         <span class="stat-value" id="readCount">0</span>
         <span class="stat-label">read</span>
@@ -1852,6 +1852,7 @@ async function loadArticles() {
   }
   renderPapers();
   updateStats();
+  document.getElementById('statsRow').style.opacity = '1';
 }
 
 async function loadAnalysis(id) {
