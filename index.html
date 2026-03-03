@@ -1810,6 +1810,7 @@ async function loadArticles() {
       papers = CONTENT;
     }
   }
+  loadReadState();
   buildFilters();
   renderPapers();
   updateStats();
@@ -1860,14 +1861,30 @@ const noteTypeMap = {
 
 // ── Load State ──
 function loadReadState() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(CONFIG.storage.prefix + 'read') || '[]');
-    papers.forEach(p => { if (saved.includes(p.id)) p.read = true; });
-  } catch {}
+  // API is source of truth for read state — sync localStorage from it
+  saveState();
+  // Also sync ratings from API
+  const ratings = getRatings();
+  let changed = false;
+  papers.forEach(p => {
+    if (p.rating !== undefined && p.rating !== null && p.rating !== ratings[p.id]) {
+      ratings[p.id] = p.rating;
+      changed = true;
+    }
+  });
+  if (changed) localStorage.setItem(RATINGS_KEY, JSON.stringify(ratings));
 }
 
 function saveState() {
   localStorage.setItem(CONFIG.storage.prefix + 'read', JSON.stringify(papers.filter(p => p.read).map(p => p.id)));
+}
+
+function patchArticle(id, updates) {
+  fetch(`/.netlify/functions/articles?id=${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updates)
+  }).catch(e => console.error('Failed to patch article:', e));
 }
 
 // ── Theme ──
@@ -1952,6 +1969,8 @@ function setRating(paperId, rating) {
   localStorage.setItem(RATINGS_KEY, JSON.stringify(ratings));
   renderPapers();
   recordActivity();
+  // Persist to API
+  patchArticle(paperId, { rating });
 }
 
 function renderRating(paperId) {
@@ -2304,6 +2323,8 @@ function toggleRead(id) {
   updateStats();
   renderPapers();
   if (paper.read) recordActivity();
+  // Persist to API
+  patchArticle(id, { read: paper.read });
 }
 
 function toggleAnalysis(id) {
@@ -3113,7 +3134,6 @@ function retryAddArticle(btn, url, title, note) {
 // ── Init ──
 applyConfig();
 loadTheme();
-loadReadState();
 allCollapsed = localStorage.getItem(COLLAPSED_KEY) === 'true';
 if (allCollapsed) document.getElementById('collapseToggle').innerHTML = '<i data-lucide="rows-" style="margin-right:4px;font-size:13px;"></i> Expand all';
 renderStreak();
