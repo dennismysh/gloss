@@ -73,7 +73,7 @@ async function handleGet() {
 
 async function handlePost(req) {
   const body = await req.json();
-  const { url, tags } = body;
+  const { url, tags, title, note } = body;
 
   if (!url) {
     return new Response(JSON.stringify({ error: "URL is required" }), {
@@ -100,7 +100,7 @@ async function handlePost(req) {
 
   // Call Claude via AI Gateway
   const anthropic = new Anthropic();
-  const prompt = buildPrompt(articleContent, url, tags);
+  const prompt = buildPrompt(articleContent, url, tags, title, note);
 
   const message = await anthropic.messages.create({
     model: "claude-sonnet-4-5-20250929",
@@ -128,6 +128,7 @@ async function handlePost(req) {
     tags: parsed.tags || tags || [],
     read: false,
     hasAnalysis: true,
+    note: note || '',
     createdAt: new Date().toISOString(),
   };
 
@@ -181,8 +182,10 @@ async function handlePatch(req, url) {
   });
 }
 
-function buildPrompt(content, url, suggestedTags) {
+function buildPrompt(content, url, suggestedTags, suggestedTitle, readerNote) {
   const tagList = suggestedTags ? suggestedTags.join(", ") : "auto-detect from: ai, rust, android, systems, architecture, tooling, web, culture";
+  const titleHint = suggestedTitle ? `\n\nThe reader suggested this title: "${suggestedTitle}". Use it if accurate, otherwise use the actual article title.` : '';
+  const noteContext = readerNote ? `\n\nThe reader added this note about why they saved it: "${readerNote}". Keep this context in mind when writing the analysis.` : '';
 
   return `You are analyzing an article for a reading list app. Read the following article content and return a JSON object with these fields:
 
@@ -214,6 +217,8 @@ Analysis HTML template:
   [5 sections: TL;DR, Core Contribution, Key Insights, Why This Matters, Content Angle]
   [Each section: <div class="tts-section"><div class="tts-section-title">...</div><p class="tts-paragraph" onclick="ttsSpeak(this)">...</p></div><div class="divider"></div>]
 </div>
+
+${titleHint}${noteContext}
 
 Article URL: ${url}
 
