@@ -21,16 +21,20 @@ const CONFIG = {
   // Content items reference tags by key (e.g., "ai", "design").
   // Tags found in content but not listed here get auto-generated buttons.
   tags: {
-    ai:        ['tag-primary',   'AI'],
-    design:    ['tag-secondary', 'Design'],
-    research:  ['tag-muted',     'Research'],
-    tools:     ['tag-highlight', 'Tools'],
+    ai:           ['tag-primary',   'AI'],
+    rust:         ['tag-secondary', 'Rust'],
+    android:      ['tag-highlight', 'Android'],
+    systems:      ['tag-muted',     'Systems'],
+    architecture: ['tag-primary',   'Architecture'],
+    tooling:      ['tag-secondary', 'Tooling'],
+    web:          ['tag-highlight', 'Web'],
+    culture:      ['tag-muted',     'Culture'],
   },
 
   // ── Branding ──
   branding: {
-    accent: "#FF5021",         // Primary CTA color
-    accent_hover: "#E8481D",
+    accent: "#F25623",
+    accent_hover: "#D94A1E",
     teal: "#2C5F6F",           // Secondary / teal
   },
 
@@ -47,7 +51,7 @@ const CONFIG = {
 
   // ── GitHub Integration ──
   github: {
-    default_repo: "",          // e.g., "yourusername/gloss"
+    default_repo: "dennismysh/gloss",    // e.g., "yourusername/gloss"
     default_path: "notes",     // Subfolder for note files
   },
 

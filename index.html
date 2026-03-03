@@ -24,10 +24,10 @@
     --border-subtle: #F0EEEC;
 
     /* Accent */
-    --accent: #FF5021;
-    --accent-hover: #E8481D;
-    --accent-subtle: #FF502112;
-    --accent-muted: #FF502108;
+    --accent: #F25623;
+    --accent-hover: #D94A1E;
+    --accent-subtle: #F2562312;
+    --accent-muted: #F2562308;
 
     /* Semantic */
     --teal: #2C5F6F;
@@ -44,7 +44,7 @@
     --rose-subtle: #E11D4814;
 
     /* Tag colors */
-    --tag-primary-bg: #FF502116;
+    --tag-primary-bg: #F2562316;
     --tag-primary-text: #D94318;
     --tag-secondary-bg: #6B696614;
     --tag-secondary-text: #FFFFFF;
@@ -107,15 +107,15 @@
     --text-inverse: #1A1918;
     --border: #2A2928;
     --border-subtle: #222221;
-    --accent-subtle: #FF502120;
-    --accent-muted: #FF502110;
+    --accent-subtle: #F2562320;
+    --accent-muted: #F2562310;
     --teal-subtle: #2C5F6F20;
     --green-subtle: #22A06B20;
     --amber-subtle: #E8920D20;
     --blue-subtle: #388BFD20;
     --purple-subtle: #8B5CF620;
     --rose-subtle: #E11D4820;
-    --tag-primary-bg: #FF502120;
+    --tag-primary-bg: #F2562320;
     --tag-secondary-bg: #6B696620;
     --tag-secondary-fill: #6B6966;
     --tag-highlight-bg: #FFE01B30;
@@ -1835,21 +1835,65 @@
 
 <script>
 // ── Analysis Constants ──
-const paper1Analysis = ``;
+const paper1Analysis = `
+<div class="analysis-panel open">
+  <div class="analysis-header">
+    <div class="analysis-badge">Article Analysis · TTS Optimized</div>
+    <div class="analysis-meta">~5 min listen</div>
+  </div>
 
-const paper2Analysis = ``;
+  <div class="tts-controls">
+    <button class="tts-btn" onclick="ttsPlayAll()">▶ Play All</button>
+    <button class="tts-btn" onclick="ttsPause()">⏸ Pause</button>
+    <button class="tts-btn" onclick="ttsStop()">⏹ Stop</button>
+    <span class="tts-status">Click any paragraph to start</span>
+  </div>
 
-const paper3Analysis = ``;
+  <div class="tts-vitals">
+    <strong>Title:</strong> The Town Where People Live Underground<br>
+    <strong>Authors:</strong> BBC Future<br>
+    <strong>Source:</strong> BBC Future<br>
+    <strong>One-liner:</strong> How an Australian opal-mining town became a century-old case study in climate-adapted architecture
+  </div>
 
-const paper4Analysis = ``;
+  <div class="tts-section">
+    <div class="tts-section-title">TL;DR — Why You Should Care</div>
+    <p class="tts-paragraph" onclick="ttsSpeak(this)">Imagine a place so hot that birds have been known to fall from the sky. Where surface temperatures regularly blow past <span class="stat-highlight">40 degrees Celsius</span> and sometimes hit <span class="stat-highlight">52 degrees Celsius</span>, which is around 126 Fahrenheit. Now imagine that instead of cranking up the air conditioning, the locals just decided to move underground. That is Coober Pedy, a remote town in South Australia, about <span class="stat-highlight">846 kilometers</span> north of Adelaide.</p>
+    <p class="tts-paragraph" onclick="ttsSpeak(this)">What makes Coober Pedy fascinating is not just that people live underground, but how well it works. The underground homes, called "dugouts," maintain a <span class="highlight">constant temperature between 23 and 25 degrees Celsius year-round</span>, no air conditioning required. That is a passive cooling solution that has been working for over a century, and as climate change pushes temperatures higher across the globe, this quirky outback town is starting to look less like an oddity and more like a blueprint.</p>
+  </div>
 
-const paper5Analysis = ``;
+  <div class="divider"></div>
 
-const paper6Analysis = ``;
+  <div class="tts-section">
+    <div class="tts-section-title">The Core Contribution</div>
+    <p class="tts-paragraph" onclick="ttsSpeak(this)">Coober Pedy's underground living started as a practical byproduct of opal mining. In 1915, a gold prospector stumbled upon opals in the area, and miners began flooding in. They quickly realized that the same holes they were digging for opals made excellent shelters from the brutal desert heat. Over the decades, what started as rough mining dugouts evolved into a full underground town. Today, roughly <span class="stat-highlight">50 percent of the population</span> lives below the surface.</p>
+    <p class="tts-paragraph" onclick="ttsSpeak(this)">And we are not just talking about bedrooms carved into rock. <span class="highlight">Coober Pedy has underground churches, hotels, shops, and even a bar</span>. The town's name itself tells the story. It comes loosely from an indigenous Australian term meaning "white man in a hole." The iron-rich sandstone and siltstone rock is stable enough to allow huge ceiling spans, and some underground homes spread across <span class="stat-highlight">450 square meters</span>. A standard three-bedroom dugout with a lounge, kitchen, and bathroom costs about the same to excavate as building a conventional house on the surface.</p>
+  </div>
 
-const paper7Analysis = ``;
+  <div class="divider"></div>
 
-const paper8Analysis = ``;
+  <div class="tts-section">
+    <div class="tts-section-title">Key Insights and Evaluation</div>
+    <p class="tts-paragraph" onclick="ttsSpeak(this)">The numbers around Coober Pedy are striking. Together with the nearby towns of Andamooka and Mintabie, this region produces <span class="stat-highlight">85 percent of the world's opal supply</span>. So the mining economy that created the underground lifestyle still sustains it. But the real insight is architectural. The thermal mass of the surrounding rock acts as a natural temperature regulator, absorbing heat during the day and releasing it slowly. The result is a stable interior climate with zero energy cost.</p>
+    <p class="tts-paragraph" onclick="ttsSpeak(this)">What is particularly interesting is that this is not some experimental green architecture project. <span class="highlight">It is a solution that emerged organically from necessity over a hundred years ago</span>, and it has been refined by generations of residents. Mining families sometimes buy adjoining properties and tunnel to link their homes together, creating sprawling underground complexes. The practicality of it is hard to argue with when the alternative is spending a fortune on air conditioning in a place where electronics sometimes need to be stored in fridges just to keep them from overheating.</p>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="tts-section">
+    <div class="tts-section-title">Why This Matters</div>
+    <p class="tts-paragraph" onclick="ttsSpeak(this)">As climate change accelerates, more and more regions are experiencing extreme heat events that strain power grids and make surface living increasingly uncomfortable, even dangerous. The conventional response is more air conditioning, which consumes enormous amounts of energy and contributes to the very emissions driving the problem. <span class="highlight">Coober Pedy offers a fundamentally different model: adapt architecture to the environment instead of fighting the environment with energy</span>.</p>
+    <p class="tts-paragraph" onclick="ttsSpeak(this)">Obviously, not every city can move underground. But the principles — using thermal mass, earth sheltering, and passive cooling — are applicable far beyond the Australian outback. Underground and earth-sheltered construction is gaining renewed interest from architects and urban planners looking for sustainable solutions to extreme heat. Coober Pedy is proof of concept that has been running in production for over a century.</p>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="tts-section">
+    <div class="tts-section-title">Content Angle</div>
+    <p class="tts-paragraph" onclick="ttsSpeak(this)">Here is your dinner party version. There is a town in the Australian outback called Coober Pedy where it gets so hot that birds literally fall from the sky. So about half the population just moved underground. They carved homes, churches, and hotels into the rock, and those spaces stay a perfect 23 degrees year-round without any air conditioning. The whole thing started because opal miners in 1915 realized their mine shafts were more comfortable than their tents. Now the town produces 85 percent of the world's opals and might accidentally have figured out how we should all be building in a warming world. The name? It roughly translates from the local indigenous language as "white man in a hole."</p>
+  </div>
+</div>
+`;
 
 
 
@@ -2373,7 +2417,7 @@ function renderPapers() {
          </button>`
       : '';
 
-    const analysisMap = { 1: paper1Analysis, 2: paper2Analysis, 3: paper3Analysis, 4: paper4Analysis, 5: paper5Analysis, 6: paper6Analysis, 7: paper7Analysis, 8: paper8Analysis };
+    const analysisMap = { 1: paper1Analysis };
     const analysisContent = p.hasAnalysis && analysisOpen[p.id] ? (analysisMap[p.id] || '') : '';
 
     const noteCount = getNotes().filter(n => n.paperId === p.id).length;
