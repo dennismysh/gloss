@@ -122,7 +122,7 @@ async function handlePost(req) {
         const prompt = buildPrompt(articleContent, url, tags, title, note);
 
         const message = await anthropic.messages.create({
-          model: "claude-haiku-4-5-20241022",
+          model: "claude-haiku-4-5",
           max_tokens: 8192,
           messages: [{ role: "user", content: prompt }],
         });
