@@ -1645,7 +1645,7 @@
       </div>
       <div style="display:flex;align-items:center;gap:4px;">
         <button class="theme-toggle sync-btn" id="syncBtn" onclick="quickSync()" title="Sync with GitHub" style="display:none;"><i data-lucide="refresh-cw" id="syncIcon"></i></button>
-        <button class="theme-toggle" id="ghSyncStatus" onclick="openSettings()" title="GitHub sync settings" style="font-size:16px;opacity:0.5;"><i data-lucide="github"></i></button>
+        <button class="theme-toggle" onclick="openSettings()" title="Settings" style="font-size:16px;opacity:0.5;"><i data-lucide="settings"></i></button>
         <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle dark mode"><i data-lucide="sun"></i></button>
       </div>
     </div>
@@ -1712,32 +1712,18 @@
 <div class="settings-overlay" id="settingsOverlay" onclick="if(event.target===this)closeSettings()">
   <div class="settings-modal">
     <div class="settings-header">
-      <span class="settings-title">GitHub Sync</span>
+      <span class="settings-title">Settings</span>
       <button class="settings-close" onclick="closeSettings()">×</button>
     </div>
     <div class="settings-body">
-      <p class="settings-desc">Connect to GitHub so your notes are saved as markdown files in the repo. Claude can then read and write to these files through its GitHub connection.</p>
-      <label class="settings-label">Personal Access Token</label>
-      <input type="password" class="settings-input" id="ghTokenInput" placeholder="ghp_xxxxxxxxxxxx" autocomplete="off">
-      <p class="settings-hint">Create a <a href="https://github.com/settings/tokens?type=beta" target="_blank" rel="noopener">fine-grained token</a> with read/write Contents access scoped to your repo.</p>
-      <label class="settings-label" style="margin-top:12px;">Repository</label>
-      <input type="text" class="settings-input" id="ghRepoInput" value="" autocomplete="off">
-      <label class="settings-label" style="margin-top:12px;">Notes folder path</label>
-      <input type="text" class="settings-input" id="ghPathInput" value="notes" autocomplete="off">
+      <label class="settings-label">API Key</label>
+      <input type="password" class="settings-input" id="apiKeyInput" placeholder="Enter your API key to enable editing" autocomplete="off">
+      <p class="settings-hint">Required to add, edit, or delete articles. Leave blank for read-only mode.</p>
       <div class="settings-actions">
-        <button class="settings-btn settings-btn-test" onclick="testGitHubConnection()">Test connection</button>
-        <button class="settings-btn settings-btn-save" onclick="saveGitHubSettings()">Save</button>
+        <button class="settings-btn settings-btn-save" onclick="saveApiKey()">Save</button>
+        <button class="settings-btn" onclick="clearApiKey()">Clear key</button>
       </div>
-      <div class="settings-status" id="ghSettingsStatus"></div>
-      <div class="settings-sync-section" id="ghSyncSection" style="display:none;">
-        <hr style="border:none;border-top:1px solid var(--border);margin:16px 0;">
-        <p class="settings-label">Sync</p>
-        <div class="settings-actions">
-          <button class="settings-btn settings-btn-test" onclick="syncNotesToGitHub()">Push all notes to GitHub</button>
-          <button class="settings-btn settings-btn-test" onclick="pullNotesFromGitHub()">Pull notes from GitHub</button>
-        </div>
-        <div class="settings-status" id="ghSyncStatus2"></div>
-      </div>
+      <div class="settings-status" id="settingsStatus"></div>
     </div>
   </div>
 </div>
@@ -1858,6 +1844,21 @@ let currentNoteType = 'note';
 let allCollapsed = false;
 let expandedCards = new Set();
 let collapsedCards = new Set();
+
+function getApiKey() {
+  return localStorage.getItem('gloss_api_key') || '';
+}
+
+function authHeaders() {
+  const key = getApiKey();
+  const headers = { 'Content-Type': 'application/json' };
+  if (key) headers['Authorization'] = `Bearer ${key}`;
+  return headers;
+}
+
+function isAdmin() {
+  return !!getApiKey();
+}
 let isRecording = false;
 let recognition = null;
 let mentionActive = false;
@@ -2716,12 +2717,8 @@ async function quickSync() {
 }
 
 function openSettings() {
-  const cfg = getGHConfig();
-  document.getElementById('ghTokenInput').value = cfg.token;
-  document.getElementById('ghRepoInput').value = cfg.repo;
-  document.getElementById('ghPathInput').value = cfg.path;
-  document.getElementById('ghSettingsStatus').textContent = '';
-  document.getElementById('ghSyncSection').style.display = isGHConfigured() ? 'block' : 'none';
+  document.getElementById('apiKeyInput').value = getApiKey();
+  document.getElementById('settingsStatus').textContent = '';
   document.getElementById('settingsOverlay').classList.add('open');
 }
 
@@ -2729,21 +2726,35 @@ function closeSettings() {
   document.getElementById('settingsOverlay').classList.remove('open');
 }
 
-function saveGitHubSettings() {
-  const token = document.getElementById('ghTokenInput').value.trim();
-  const repo = document.getElementById('ghRepoInput').value.trim();
-  const path = document.getElementById('ghPathInput').value.trim();
-  if (!token || !repo || !path) {
-    document.getElementById('ghSettingsStatus').textContent = 'All fields required.';
-    return;
+function saveApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (key) {
+    localStorage.setItem('gloss_api_key', key);
+    document.getElementById('settingsStatus').textContent = '✓ Key saved — editing enabled';
+  } else {
+    localStorage.removeItem('gloss_api_key');
+    document.getElementById('settingsStatus').textContent = '✓ Key cleared — read-only mode';
   }
-  localStorage.setItem(GH_TOKEN_KEY, token);
-  localStorage.setItem(GH_REPO_KEY, repo);
-  localStorage.setItem(GH_PATH_KEY, path);
-  document.getElementById('ghSettingsStatus').textContent = '✓ Saved';
-  document.getElementById('ghSyncSection').style.display = 'block';
-  updateGHIcon();
-  showToast('GitHub sync configured');
+  document.getElementById('addArticleBtn').style.display = isAdmin() ? '' : 'none';
+  renderPapers();
+  if (window.lucide) lucide.createIcons();
+}
+
+function clearApiKey() {
+  localStorage.removeItem('gloss_api_key');
+  document.getElementById('apiKeyInput').value = '';
+  document.getElementById('settingsStatus').textContent = '✓ Key cleared — read-only mode';
+  document.getElementById('addArticleBtn').style.display = 'none';
+  renderPapers();
+  if (window.lucide) lucide.createIcons();
+}
+
+function handleAuthError() {
+  localStorage.removeItem('gloss_api_key');
+  showToast('Invalid API key — editing disabled');
+  document.getElementById('addArticleBtn').style.display = 'none';
+  renderPapers();
+  if (window.lucide) lucide.createIcons();
 }
 
 async function testGitHubConnection() {
