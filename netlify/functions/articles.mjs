@@ -1,6 +1,8 @@
 import { getStore } from "@netlify/blobs";
 import { GoogleGenAI } from "@google/genai";
 
+const MODEL_ID = "gemini-3.1-pro-preview";
+
 export default async (req, context) => {
   const method = req.method;
   const url = new URL(req.url);
@@ -122,7 +124,7 @@ async function handlePost(req) {
         const prompt = buildPrompt(articleContent, url, tags, title, note);
 
         const result = await genAI.models.generateContent({
-          model: "gemini-3.1-pro-preview",
+          model: MODEL_ID,
           contents: prompt,
           config: {
             responseMimeType: "application/json",
@@ -160,9 +162,13 @@ async function handlePost(req) {
         const articles = getStore("articles");
         await articles.setJSON(String(id), article);
 
-        // Store analysis
+        // Store analysis with model metadata
         const analyses = getStore("analyses");
-        await analyses.set(String(id), parsed.analysis);
+        await analyses.setJSON(String(id), {
+          html: parsed.analysis,
+          model: MODEL_ID,
+          analyzedAt: new Date().toISOString(),
+        });
 
         // Update index
         await saveIndex({ nextId: id + 1, count: index.count + 1 });
