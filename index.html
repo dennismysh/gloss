@@ -2516,7 +2516,7 @@ function renderPapers() {
     return `
       <div class="paper ${p.read ? 'is-read' : ''} ${collapsed}" style="animation-delay: ${i * 0.03}s" data-id="${p.id}">
         <div class="paper-top" onclick="expandCard(this, ${p.id})">
-          <span class="paper-number">${String(i + 1).padStart(2, '0')}</span>
+          <span class="paper-number">${String(filtered.length - i).padStart(2, '0')}</span>
           <div class="paper-content">
             <div class="paper-title">${p.title}${p.essential ? '<span class="essential-badge">Essential</span>' : ''}</div>
           </div>
