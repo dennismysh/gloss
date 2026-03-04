@@ -2406,10 +2406,8 @@ function hideMentionDropdown() {
 function expandCard(el, paperId) {
   const card = el.closest('.paper');
   if (card.classList.contains('collapsed')) {
-    card.classList.remove('collapsed');
     expandedCards.add(paperId);
   } else {
-    card.classList.add('collapsed');
     expandedCards.delete(paperId);
     // Close analysis if open
     if (analysisOpen[paperId]) {
@@ -2417,6 +2415,7 @@ function expandCard(el, paperId) {
       if (activePaperId === paperId) clearPaperContext();
     }
   }
+  renderPapers();
   if (window.lucide) lucide.createIcons();
 }
 
