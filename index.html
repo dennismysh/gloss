@@ -1699,6 +1699,7 @@
   <div class="controls-row">
     <span class="results-count" id="resultsCount"></span>
     <div class="controls-actions">
+      <button class="control-btn" id="sortToggle" onclick="toggleSort()"><i data-lucide="arrow-up-narrow-wide" style="margin-right:4px;font-size:13px;"></i> Oldest first</button>
       <button class="control-btn" id="collapseToggle" onclick="toggleCollapseAll()"><i data-lucide="rows-" style="margin-right:4px;font-size:13px;"></i> Collapse all</button>
     </div>
   </div>
@@ -1849,6 +1850,7 @@ const THEME_KEY = CONFIG.storage.prefix + 'theme';
 const COLLAPSED_KEY = CONFIG.storage.prefix + 'collapsed';
 let currentFilter = 'all';
 let searchQuery = '';
+let currentSort = 'oldest';
 let analysisOpen = {};
 let analysisMetaCache = {};
 let activePaperId = null;
@@ -2418,6 +2420,14 @@ function expandCard(el, paperId) {
   if (window.lucide) lucide.createIcons();
 }
 
+function toggleSort() {
+  currentSort = currentSort === 'oldest' ? 'newest' : 'oldest';
+  const icon = currentSort === 'oldest' ? 'arrow-up-narrow-wide' : 'arrow-down-wide-narrow';
+  document.getElementById('sortToggle').innerHTML = `<i data-lucide="${icon}" style="margin-right:4px;font-size:13px;"></i> ${currentSort === 'oldest' ? 'Oldest first' : 'Newest first'}`;
+  renderPapers();
+  if (window.lucide) lucide.createIcons();
+}
+
 function toggleCollapseAll() {
   allCollapsed = !allCollapsed;
   expandedCards.clear();
@@ -2472,6 +2482,13 @@ function renderPapers() {
     );
   }
 
+  // Sort
+  if (currentSort === 'oldest') {
+    filtered = [...filtered].sort((a, b) => a.id - b.id);
+  } else {
+    filtered = [...filtered].sort((a, b) => b.id - a.id);
+  }
+
   // Update results count
   document.getElementById('resultsCount').textContent = `${filtered.length} ${filtered.length !== 1 ? CONFIG.content.plural : CONFIG.content.singular}`;
 
@@ -2516,7 +2533,7 @@ function renderPapers() {
     return `
       <div class="paper ${p.read ? 'is-read' : ''} ${collapsed}" style="animation-delay: ${i * 0.03}s" data-id="${p.id}">
         <div class="paper-top" onclick="expandCard(this, ${p.id})">
-          <span class="paper-number">${String(filtered.length - i).padStart(2, '0')}</span>
+          <span class="paper-number">${String(currentSort === 'oldest' ? i + 1 : filtered.length - i).padStart(2, '0')}</span>
           <div class="paper-content">
             <div class="paper-title">${p.title}${p.essential ? '<span class="essential-badge">Essential</span>' : ''}</div>
           </div>
