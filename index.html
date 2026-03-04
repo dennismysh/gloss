@@ -1857,6 +1857,7 @@ let activePaperId = null;
 let currentNoteType = 'note';
 let allCollapsed = false;
 let expandedCards = new Set();
+let collapsedCards = new Set();
 let isRecording = false;
 let recognition = null;
 let mentionActive = false;
@@ -2404,15 +2405,27 @@ function hideMentionDropdown() {
 
 // ── Collapse/Expand ──
 function expandCard(el, paperId) {
-  const card = el.closest('.paper');
-  if (card.classList.contains('collapsed')) {
-    expandedCards.add(paperId);
+  if (allCollapsed) {
+    // When all collapsed: toggle individual expand
+    if (expandedCards.has(paperId)) {
+      expandedCards.delete(paperId);
+      if (analysisOpen[paperId]) {
+        analysisOpen[paperId] = false;
+        if (activePaperId === paperId) clearPaperContext();
+      }
+    } else {
+      expandedCards.add(paperId);
+    }
   } else {
-    expandedCards.delete(paperId);
-    // Close analysis if open
-    if (analysisOpen[paperId]) {
-      analysisOpen[paperId] = false;
-      if (activePaperId === paperId) clearPaperContext();
+    // When all expanded: toggle individual collapse
+    if (collapsedCards.has(paperId)) {
+      collapsedCards.delete(paperId);
+    } else {
+      collapsedCards.add(paperId);
+      if (analysisOpen[paperId]) {
+        analysisOpen[paperId] = false;
+        if (activePaperId === paperId) clearPaperContext();
+      }
     }
   }
   renderPapers();
@@ -2430,6 +2443,7 @@ function toggleSort() {
 function toggleCollapseAll() {
   allCollapsed = !allCollapsed;
   expandedCards.clear();
+  collapsedCards.clear();
   const icon = allCollapsed ? 'rows-4' : 'rows-3';
   document.getElementById('collapseToggle').innerHTML = `<i data-lucide="${icon}" style="margin-right:4px;font-size:13px;"></i> ${allCollapsed ? 'Expand all' : 'Collapse all'}`;
   localStorage.setItem(COLLAPSED_KEY, allCollapsed);
@@ -2526,7 +2540,10 @@ function renderPapers() {
     const noteCount = getNotes().filter(n => n.paperId === p.id).length;
     const noteBadge = `<button class="action-btn" onclick="focusNoteForPaper(${p.id})"><i data-lucide="pen-line" style="font-size:12px;margin-right:3px;"></i>${noteCount > 0 ? noteCount + ' note' + (noteCount !== 1 ? 's' : '') : 'Add note'}</button>`;
 
-    const collapsed = (allCollapsed && !expandedCards.has(p.id) && !analysisOpen[p.id]) ? 'collapsed' : '';
+    const isCollapsed = allCollapsed
+      ? (!expandedCards.has(p.id) && !analysisOpen[p.id])
+      : (collapsedCards.has(p.id) && !analysisOpen[p.id]);
+    const collapsed = isCollapsed ? 'collapsed' : '';
     const ratingHtml = p.read ? renderRating(p.id) : '';
 
     return `
