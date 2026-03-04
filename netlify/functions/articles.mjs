@@ -20,7 +20,7 @@ export default async (req, context) => {
 
   if (method === "POST") {
     const reanalyzeId = url.searchParams.get("reanalyze");
-    if (reanalyzeId) return handleReanalyze(reanalyzeId);
+    if (reanalyzeId) return handleReanalyze(reanalyzeId, req);
     return handlePost(req);
   }
 
@@ -29,7 +29,7 @@ export default async (req, context) => {
   }
 
   if (method === "DELETE") {
-    return handleDelete(url);
+    return handleDelete(url, req);
   }
 
   return new Response(JSON.stringify({ error: "Method not allowed" }), {
@@ -37,6 +37,19 @@ export default async (req, context) => {
     headers: { "Content-Type": "application/json" },
   });
 };
+
+function requireAuth(req) {
+  const authHeader = req.headers.get("authorization") || "";
+  const token = authHeader.replace(/^Bearer\s+/i, "");
+  const expected = process.env.GLOSS_API_KEY;
+  if (!expected || token !== expected) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json", ...corsHeaders() },
+    });
+  }
+  return null;
+}
 
 function corsHeaders() {
   return {
@@ -80,6 +93,9 @@ async function handleGet() {
 }
 
 async function handlePost(req) {
+  const authErr = requireAuth(req);
+  if (authErr) return authErr;
+
   const body = await req.json();
   const { url, tags, title, note } = body;
 
@@ -195,7 +211,10 @@ async function handlePost(req) {
   });
 }
 
-async function handleReanalyze(id) {
+async function handleReanalyze(id, req) {
+  const authErr = requireAuth(req);
+  if (authErr) return authErr;
+
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
@@ -287,6 +306,9 @@ async function handleReanalyze(id) {
 }
 
 async function handlePatch(req, url) {
+  const authErr = requireAuth(req);
+  if (authErr) return authErr;
+
   const id = url.searchParams.get("id");
   if (!id) {
     return new Response(JSON.stringify({ error: "ID is required" }), {
@@ -320,7 +342,10 @@ async function handlePatch(req, url) {
   });
 }
 
-async function handleDelete(url) {
+async function handleDelete(url, req) {
+  const authErr = requireAuth(req);
+  if (authErr) return authErr;
+
   const id = url.searchParams.get("id");
   if (!id) {
     return new Response(JSON.stringify({ error: "ID is required" }), {
