@@ -1896,17 +1896,20 @@ function saveState() {
 function patchArticle(id, updates) {
   fetch(`/.netlify/functions/articles?id=${id}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(),
     body: JSON.stringify(updates)
-  }).catch(e => console.error('Failed to patch article:', e));
+  })
+    .then(res => { if (res.status === 401) handleAuthError(); })
+    .catch(e => console.error('Failed to patch article:', e));
 }
 
 function deleteArticle(id) {
   const paper = papers.find(p => p.id === id);
   if (!paper || !confirm(`Delete "${paper.title}"?`)) return;
 
-  fetch(`/.netlify/functions/articles?id=${id}`, { method: 'DELETE' })
+  fetch(`/.netlify/functions/articles?id=${id}`, { method: 'DELETE', headers: authHeaders() })
     .then(res => {
+      if (res.status === 401) { handleAuthError(); return; }
       if (!res.ok) throw new Error('Delete failed');
       papers = papers.filter(p => p.id !== id);
       renderPapers();
@@ -1931,7 +1934,7 @@ function reanalyzeArticle(id) {
 
   fetch(`/.netlify/functions/articles?reanalyze=${id}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(),
   })
     .then(res => {
       const reader = res.body.getReader();
@@ -3221,7 +3224,7 @@ function addArticleViaStream(url, title, note) {
   // Stream SSE response from API
   fetch('/.netlify/functions/articles', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(),
     body: JSON.stringify({ url, title: title || undefined, note: note || undefined })
   })
     .then(res => {
