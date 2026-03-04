@@ -1915,6 +1915,79 @@ function deleteArticle(id) {
     });
 }
 
+function reanalyzeArticle(id) {
+  const paper = papers.find(p => p.id === id);
+  if (!paper || !confirm(`Re-run analysis for "${paper.title}"?`)) return;
+
+  // Show loading in analysis panel
+  analysisOpen[id] = true;
+  analysisCache[id] = '<div style="padding:20px;text-align:center;color:var(--text-muted);"><div class="spinner" style="display:inline-block;margin-right:8px;"></div>Re-analyzing...</div>';
+  delete analysisMetaCache[id];
+  renderPapers();
+
+  fetch(`/.netlify/functions/articles?reanalyze=${id}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  })
+    .then(res => {
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      const statusMessages = {
+        fetching: 'Fetching article...',
+        analyzing: 'Analyzing with AI...',
+        storing: 'Saving new analysis...',
+      };
+
+      function processStream() {
+        return reader.read().then(({ done, value }) => {
+          if (done) return;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop();
+
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            try {
+              const data = JSON.parse(line.slice(6));
+
+              if (data.status === 'complete') {
+                // Clear cache and reload fresh analysis
+                delete analysisCache[id];
+                delete analysisMetaCache[id];
+                loadAnalysis(id).then(() => {
+                  renderPapers();
+                  if (window.lucide) lucide.createIcons();
+                });
+                showToast('Analysis updated');
+                return;
+              }
+
+              if (data.status === 'error') {
+                analysisCache[id] = `<div style="padding:20px;text-align:center;color:#e74c3c;">Re-analysis failed: ${data.error}</div>`;
+                renderPapers();
+                return;
+              }
+
+              if (statusMessages[data.status]) {
+                analysisCache[id] = `<div style="padding:20px;text-align:center;color:var(--text-muted);"><div class="spinner" style="display:inline-block;margin-right:8px;"></div>${statusMessages[data.status]}</div>`;
+                renderPapers();
+              }
+            } catch (e) { /* skip */ }
+          }
+          return processStream();
+        });
+      }
+
+      return processStream();
+    })
+    .catch(err => {
+      analysisCache[id] = `<div style="padding:20px;text-align:center;color:#e74c3c;">Re-analysis failed: ${err.message || 'Network error'}</div>`;
+      renderPapers();
+    });
+}
+
 // ── Theme ──
 function loadTheme() {
   const saved = localStorage.getItem(THEME_KEY) || 'light';
@@ -2420,6 +2493,9 @@ function renderPapers() {
     const analysisBtn = p.hasAnalysis
       ? `<button class="action-btn btn-analysis ${analysisOpen[p.id] ? 'open' : ''}" onclick="toggleAnalysis(${p.id})">
            <i data-lucide="chevron-down" style="font-size:12px;margin-right:3px;"></i>${analysisOpen[p.id] ? 'Hide' : 'Analysis'}
+         </button>
+         <button class="action-btn" onclick="reanalyzeArticle(${p.id})" title="Re-run analysis">
+           <i data-lucide="refresh-cw" style="font-size:12px;margin-right:3px;"></i>Re-analyze
          </button>`
       : '';
 
