@@ -1848,6 +1848,7 @@ let analysisOpen = {};
 let activePaperId = null;
 let currentNoteType = 'note';
 let allCollapsed = false;
+let expandedCards = new Set();
 let isRecording = false;
 let recognition = null;
 let mentionActive = false;
@@ -2323,12 +2324,24 @@ function hideMentionDropdown() {
 // ── Collapse/Expand ──
 function expandCard(el, paperId) {
   const card = el.closest('.paper');
-  if (!card.classList.contains('collapsed')) return; // only act when collapsed
-  card.classList.remove('collapsed');
+  if (card.classList.contains('collapsed')) {
+    card.classList.remove('collapsed');
+    expandedCards.add(paperId);
+  } else {
+    card.classList.add('collapsed');
+    expandedCards.delete(paperId);
+    // Close analysis if open
+    if (analysisOpen[paperId]) {
+      analysisOpen[paperId] = false;
+      if (activePaperId === paperId) clearPaperContext();
+    }
+  }
+  if (window.lucide) lucide.createIcons();
 }
 
 function toggleCollapseAll() {
   allCollapsed = !allCollapsed;
+  expandedCards.clear();
   const icon = allCollapsed ? 'rows-4' : 'rows-3';
   document.getElementById('collapseToggle').innerHTML = `<i data-lucide="${icon}" style="margin-right:4px;font-size:13px;"></i> ${allCollapsed ? 'Expand all' : 'Collapse all'}`;
   localStorage.setItem(COLLAPSED_KEY, allCollapsed);
@@ -2409,7 +2422,7 @@ function renderPapers() {
     const noteCount = getNotes().filter(n => n.paperId === p.id).length;
     const noteBadge = `<button class="action-btn" onclick="focusNoteForPaper(${p.id})"><i data-lucide="pen-line" style="font-size:12px;margin-right:3px;"></i>${noteCount > 0 ? noteCount + ' note' + (noteCount !== 1 ? 's' : '') : 'Add note'}</button>`;
 
-    const collapsed = allCollapsed && !analysisOpen[p.id] ? 'collapsed' : '';
+    const collapsed = (allCollapsed && !expandedCards.has(p.id) && !analysisOpen[p.id]) ? 'collapsed' : '';
     const ratingHtml = p.read ? renderRating(p.id) : '';
 
     return `
@@ -2419,7 +2432,7 @@ function renderPapers() {
           <div class="paper-content">
             <div class="paper-title">${p.title}${p.essential ? '<span class="essential-badge">Essential</span>' : ''}</div>
           </div>
-          ${collapsed ? '<i data-lucide="chevron-down" class="expand-chevron"></i>' : ''}
+          ${collapsed ? '<i data-lucide="chevron-down" class="expand-chevron"></i>' : '<i data-lucide="chevron-up" class="expand-chevron" style="opacity:0.3"></i>'}
         </div>
         <div class="paper-body">
           <div class="paper-relevance">${p.relevance}</div>
