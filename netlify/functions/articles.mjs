@@ -19,6 +19,8 @@ export default async (req, context) => {
   }
 
   if (method === "POST") {
+    const reanalyzeId = url.searchParams.get("reanalyze");
+    if (reanalyzeId) return handleReanalyze(reanalyzeId);
     return handlePost(req);
   }
 
@@ -174,6 +176,97 @@ async function handlePost(req) {
         await saveIndex({ nextId: id + 1, count: index.count + 1 });
 
         send({ status: "complete", article });
+      } catch (e) {
+        send({ status: "error", error: e.message || "Unexpected error" });
+      }
+
+      clearInterval(heartbeat);
+      controller.close();
+    },
+  });
+
+  return new Response(stream, {
+    status: 200,
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      ...corsHeaders(),
+    },
+  });
+}
+
+async function handleReanalyze(id) {
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      const send = (data) => {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+      };
+
+      const heartbeat = setInterval(() => {
+        controller.enqueue(encoder.encode(`: keepalive\n\n`));
+      }, 5000);
+
+      try {
+        // Load existing article
+        const store = getStore("articles");
+        const article = await store.get(id, { type: "json" });
+        if (!article) {
+          send({ status: "error", error: "Article not found" });
+          clearInterval(heartbeat);
+          controller.close();
+          return;
+        }
+
+        send({ status: "fetching" });
+
+        // Re-fetch article content
+        const res = await fetch(article.url);
+        if (!res.ok) {
+          send({ status: "error", error: `Failed to fetch URL (HTTP ${res.status})` });
+          clearInterval(heartbeat);
+          controller.close();
+          return;
+        }
+        const articleContent = await res.text();
+
+        send({ status: "analyzing" });
+
+        // Call Gemini
+        const genAI = new GoogleGenAI({});
+        const prompt = buildPrompt(articleContent, article.url, article.tags, article.title, article.note);
+
+        const result = await genAI.models.generateContent({
+          model: MODEL_ID,
+          contents: prompt,
+          config: {
+            responseMimeType: "application/json",
+          },
+        });
+
+        let responseText = result.text;
+        responseText = responseText.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+        let parsed;
+        try {
+          parsed = JSON.parse(responseText);
+        } catch (e) {
+          send({ status: "error", error: "Failed to parse AI response" });
+          clearInterval(heartbeat);
+          controller.close();
+          return;
+        }
+
+        send({ status: "storing" });
+
+        // Overwrite analysis with new result
+        const analyses = getStore("analyses");
+        await analyses.setJSON(id, {
+          html: parsed.analysis,
+          model: MODEL_ID,
+          analyzedAt: new Date().toISOString(),
+        });
+
+        send({ status: "complete", articleId: Number(id) });
       } catch (e) {
         send({ status: "error", error: e.message || "Unexpected error" });
       }
