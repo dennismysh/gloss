@@ -1755,7 +1755,7 @@
 <div class="mention-dropdown" id="mentionDropdown"></div>
 
 <!-- Notes Bar -->
-<div class="notes-bar">
+<div class="notes-bar" id="notesBar">
   <div class="notes-bar-inner">
     <div class="notes-bar-top">
       <span id="notesContextBadge" style="display:none" class="notes-context-badge" onclick="clearPaperContext()"></span>
@@ -2178,6 +2178,7 @@ function clearPaperContext() {
 }
 
 function renderPaperNotes(paperId) {
+  if (!isAdmin()) return '';
   const notes = getNotes().filter(n => n.paperId === paperId);
   if (notes.length === 0) return '';
 
@@ -2671,6 +2672,14 @@ function closeSettings() {
   document.getElementById('settingsOverlay').classList.remove('open');
 }
 
+function updateAdminUI() {
+  const admin = isAdmin();
+  document.getElementById('addArticleBtn').style.display = admin ? '' : 'none';
+  document.getElementById('notesBar').style.display = admin ? '' : 'none';
+  renderPapers();
+  if (window.lucide) lucide.createIcons();
+}
+
 function saveApiKey() {
   const key = document.getElementById('apiKeyInput').value.trim();
   if (key) {
@@ -2680,26 +2689,20 @@ function saveApiKey() {
     localStorage.removeItem('gloss_api_key');
     document.getElementById('settingsStatus').textContent = '✓ Key cleared — read-only mode';
   }
-  document.getElementById('addArticleBtn').style.display = isAdmin() ? '' : 'none';
-  renderPapers();
-  if (window.lucide) lucide.createIcons();
+  updateAdminUI();
 }
 
 function clearApiKey() {
   localStorage.removeItem('gloss_api_key');
   document.getElementById('apiKeyInput').value = '';
   document.getElementById('settingsStatus').textContent = '✓ Key cleared — read-only mode';
-  document.getElementById('addArticleBtn').style.display = 'none';
-  renderPapers();
-  if (window.lucide) lucide.createIcons();
+  updateAdminUI();
 }
 
 function handleAuthError() {
   localStorage.removeItem('gloss_api_key');
   showToast('Invalid API key — editing disabled');
-  document.getElementById('addArticleBtn').style.display = 'none';
-  renderPapers();
-  if (window.lucide) lucide.createIcons();
+  updateAdminUI();
 }
 
 
@@ -2920,7 +2923,11 @@ if (allCollapsed) document.getElementById('collapseToggle').innerHTML = '<i data
 renderStreak();
 loadArticles();
 updateNotesCount();
-if (isAdmin()) document.getElementById('addArticleBtn').style.display = '';
+if (isAdmin()) {
+  document.getElementById('addArticleBtn').style.display = '';
+} else {
+  document.getElementById('notesBar').style.display = 'none';
+}
 if (window.lucide) lucide.createIcons();
 </script>
 </body>
