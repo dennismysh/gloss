@@ -2917,19 +2917,25 @@ function retryAddArticle(btn, url, title, note) {
 }
 
 // ── Init ──
-applyConfig();
-loadTheme();
-allCollapsed = localStorage.getItem(COLLAPSED_KEY) === 'true';
-if (allCollapsed) document.getElementById('collapseToggle').innerHTML = '<i data-lucide="rows-" style="margin-right:4px;font-size:13px;"></i> Expand all';
-renderStreak();
-loadArticles();
-updateNotesCount();
-if (isAdmin()) {
-  document.getElementById('addArticleBtn').style.display = '';
-} else {
-  document.getElementById('notesBar').style.display = 'none';
+try {
+  if (typeof CONFIG === 'undefined') throw new Error('CONFIG not loaded');
+  applyConfig();
+  loadTheme();
+  allCollapsed = localStorage.getItem(COLLAPSED_KEY) === 'true';
+  if (allCollapsed) document.getElementById('collapseToggle').innerHTML = '<i data-lucide="rows-" style="margin-right:4px;font-size:13px;"></i> Expand all';
+  renderStreak();
+  loadArticles();
+  updateNotesCount();
+  if (isAdmin()) {
+    document.getElementById('addArticleBtn').style.display = '';
+  } else {
+    document.getElementById('notesBar').style.display = 'none';
+  }
+  if (window.lucide) lucide.createIcons();
+} catch (e) {
+  console.error('Init error:', e);
+  document.getElementById('paperList').innerHTML = '<div class="empty-state">Something went wrong loading the page. <a href="javascript:location.reload()">Reload</a></div>';
 }
-if (window.lucide) lucide.createIcons();
 </script>
 </body>
 </html>
