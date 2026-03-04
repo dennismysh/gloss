@@ -1826,8 +1826,13 @@ async function loadAnalysis(id) {
     const res = await fetch(`/.netlify/functions/analysis?id=${id}`);
     if (res.ok) {
       const data = await res.json();
-      analysisCache[id] = data.analysis;
-      return data.analysis;
+      // New format returns { html, model, analyzedAt }, legacy returns { analysis }
+      const html = data.html || data.analysis || '';
+      analysisCache[id] = html;
+      if (data.model) {
+        analysisMetaCache[id] = { model: data.model, analyzedAt: data.analyzedAt };
+      }
+      return html;
     }
   } catch (e) {
     console.error(`Failed to load analysis for ${id}:`, e);
@@ -1845,6 +1850,7 @@ const COLLAPSED_KEY = CONFIG.storage.prefix + 'collapsed';
 let currentFilter = 'all';
 let searchQuery = '';
 let analysisOpen = {};
+let analysisMetaCache = {};
 let activePaperId = null;
 let currentNoteType = 'note';
 let allCollapsed = false;
@@ -2417,7 +2423,13 @@ function renderPapers() {
          </button>`
       : '';
 
-    const analysisContent = p.hasAnalysis && analysisOpen[p.id] ? (analysisCache[p.id] || '<div style="padding:20px;text-align:center;color:var(--text-muted);">Loading analysis...</div>') : '';
+    let analysisContent = '';
+    if (p.hasAnalysis && analysisOpen[p.id]) {
+      const html = analysisCache[p.id] || '<div style="padding:20px;text-align:center;color:var(--text-muted);">Loading analysis...</div>';
+      const meta = analysisMetaCache[p.id];
+      const attribution = meta ? `<div style="padding:8px 16px;font-size:11px;color:var(--text-muted);opacity:0.7;">Analyzed by ${meta.model}${meta.analyzedAt ? ' on ' + new Date(meta.analyzedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}</div>` : '';
+      analysisContent = html + attribution;
+    }
 
     const noteCount = getNotes().filter(n => n.paperId === p.id).length;
     const noteBadge = `<button class="action-btn" onclick="focusNoteForPaper(${p.id})"><i data-lucide="pen-line" style="font-size:12px;margin-right:3px;"></i>${noteCount > 0 ? noteCount + ' note' + (noteCount !== 1 ? 's' : '') : 'Add note'}</button>`;
