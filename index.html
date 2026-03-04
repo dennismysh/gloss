@@ -1682,7 +1682,7 @@
     <button class="view-tab active" data-view="library" onclick="switchView('library')">
       <i data-lucide="book-open" style="width:14px;height:14px;"></i> Library
     </button>
-    <button class="add-article-btn" onclick="openAddModal()">
+    <button class="add-article-btn" onclick="openAddModal()" id="addArticleBtn" style="display:none;">
       <i data-lucide="plus" style="width:14px;height:14px;"></i> Add article
     </button>
   </div>
@@ -2086,7 +2086,9 @@ function renderRating(paperId) {
   const current = ratings[paperId] || 0;
   let stars = '<div class="rating-row"><span class="rating-label">Rating</span>';
   for (let i = 1; i <= 5; i++) {
-    stars += `<span class="rating-star ${i <= current ? 'filled' : ''}" onclick="event.stopPropagation(); setRating(${paperId}, ${i === current ? 0 : i})">★</span>`;
+    stars += isAdmin()
+      ? `<span class="rating-star ${i <= current ? 'filled' : ''}" onclick="event.stopPropagation(); setRating(${paperId}, ${i === current ? 0 : i})">★</span>`
+      : `<span class="rating-star ${i <= current ? 'filled' : ''}" style="cursor:default;">★</span>`;
   }
   stars += '</div>';
   return stars;
@@ -2528,9 +2530,9 @@ function renderPapers() {
       ? `<button class="action-btn btn-analysis ${analysisOpen[p.id] ? 'open' : ''}" onclick="toggleAnalysis(${p.id})">
            <i data-lucide="chevron-down" style="font-size:12px;margin-right:3px;"></i>${analysisOpen[p.id] ? 'Hide' : 'Analysis'}
          </button>
-         <button class="action-btn" onclick="reanalyzeArticle(${p.id})" title="Re-run analysis">
+         ${isAdmin() ? `<button class="action-btn" onclick="reanalyzeArticle(${p.id})" title="Re-run analysis">
            <i data-lucide="refresh-cw" style="font-size:12px;margin-right:3px;"></i>Re-analyze
-         </button>`
+         </button>` : ''}`
       : '';
 
     let analysisContent = '';
@@ -2542,7 +2544,9 @@ function renderPapers() {
     }
 
     const noteCount = getNotes().filter(n => n.paperId === p.id).length;
-    const noteBadge = `<button class="action-btn" onclick="focusNoteForPaper(${p.id})"><i data-lucide="pen-line" style="font-size:12px;margin-right:3px;"></i>${noteCount > 0 ? noteCount + ' note' + (noteCount !== 1 ? 's' : '') : 'Add note'}</button>`;
+    const noteBadge = isAdmin()
+      ? `<button class="action-btn" onclick="focusNoteForPaper(${p.id})"><i data-lucide="pen-line" style="font-size:12px;margin-right:3px;"></i>${noteCount > 0 ? noteCount + ' note' + (noteCount !== 1 ? 's' : '') : 'Add note'}</button>`
+      : (noteCount > 0 ? `<span class="action-btn" style="cursor:default;"><i data-lucide="pen-line" style="font-size:12px;margin-right:3px;"></i>${noteCount} note${noteCount !== 1 ? 's' : ''}</span>` : '');
 
     const isCollapsed = allCollapsed
       ? (!expandedCards.has(p.id) && !analysisOpen[p.id])
@@ -2567,12 +2571,12 @@ function renderPapers() {
             ${p.url ? `<a href="${p.url}" target="_blank" rel="noopener" class="action-btn"><i data-lucide="${p.url.includes('arxiv.org') ? 'external-link' : 'file-text'}" style="font-size:12px;margin-right:3px;"></i>${p.url.includes('arxiv.org') ? 'arXiv' : p.url.endsWith('.pdf') ? 'PDF' : 'Source'}</a>` : ''}
             ${analysisBtn}
             ${noteBadge}
-            <button class="action-btn btn-read ${p.read ? 'marked' : ''}" onclick="toggleRead(${p.id})">
+            ${isAdmin() ? `<button class="action-btn btn-read ${p.read ? 'marked' : ''}" onclick="toggleRead(${p.id})">
               <i data-lucide="check-circle" style="font-size:12px;margin-right:3px;"></i>${p.read ? 'Read' : 'Mark read'}
-            </button>
-            <button class="action-btn btn-delete" onclick="deleteArticle(${p.id})" title="Delete article">
+            </button>` : ''}
+            ${isAdmin() ? `<button class="action-btn btn-delete" onclick="deleteArticle(${p.id})" title="Delete article">
               <i data-lucide="trash-2" style="font-size:12px;"></i>
-            </button>
+            </button>` : ''}
           </div>
           ${ratingHtml}
           ${analysisContent}
@@ -3311,7 +3315,7 @@ if (allCollapsed) document.getElementById('collapseToggle').innerHTML = '<i data
 renderStreak();
 loadArticles();
 updateNotesCount();
-updateGHIcon();
+if (isAdmin()) document.getElementById('addArticleBtn').style.display = '';
 if (window.lucide) lucide.createIcons();
 </script>
 </body>
