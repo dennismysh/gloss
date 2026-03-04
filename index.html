@@ -1792,12 +1792,13 @@ async function loadArticles() {
     const res = await fetch('/.netlify/functions/articles');
     if (res.ok) {
       papers = await res.json();
+    } else {
+      console.error('Articles API returned', res.status);
+      document.getElementById('paperList').innerHTML = '<div class="empty-state">Failed to load articles. Try refreshing.</div>';
     }
   } catch (e) {
     console.error('Failed to load articles:', e);
-    if (typeof CONTENT !== 'undefined') {
-      papers = CONTENT;
-    }
+    document.getElementById('paperList').innerHTML = '<div class="empty-state">Failed to load articles. Try refreshing.</div>';
   }
   loadReadState();
   buildFilters();
