@@ -2,3 +2,11 @@ node_modules/
 
 # Local Netlify folder
 .netlify
+
+# Environment variables
+.env
+.env.*
+
+# Private keys and certificates
+*.pem
+*.key
